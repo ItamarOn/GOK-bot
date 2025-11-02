@@ -42,6 +42,7 @@ def check_barcode(media_url: str, text=False) -> str:
         return f"barcode: {barcode_data}\n" + ask_gok(barcode_data)
 
     except Exception as e:
+        logger.exception("error while reading BarCode")
         return "error while reading BarCode"
 
 def ask_gok(barcode_data: str):
@@ -73,6 +74,7 @@ def ask_gok(barcode_data: str):
             logger.debug("Doesn't exist in GOK system")
             return "Doesn't exist in GOK system 😢"
 
+        logger.debug(f"product_info[0]:\n{product_info[0]}\n")
         kashrut_type = product_info[0]['kashrutTypes'][0]
         if kashrut_type == "לא כשר":
             return "❌ לא כשר"
