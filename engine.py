@@ -70,15 +70,31 @@ def ask_gok(barcode_data: str):
         response = requests.post(url, json=payload, headers=headers)
         response.raise_for_status()
         product_info = response.json()
-        if not product_info:
-            logger.debug("Doesn't exist in GOK system")
-            return "Doesn't exist in GOK system 😢"
+    except Exception as e:
+        logger.debug(f"request: {url} payload: {payload}")
+        logger.exception("Cannot get basic response from GOK")
+        return "Server error while asking GOK, Try again later"
 
+    if not product_info:
+        logger.debug("Doesn't exist in GOK system")
+        return "Doesn't exist in GOK system 😢"
+
+    try:
         logger.debug(f"product_info[0]:\n{product_info[0]}\n")
+
+        status = product_info[0]['status']
+
+        if status != 'מוצר מאושר ע"י הרב לשימוש במערכת':
+            logger.debug(f"Product status: {status}")
+            return f"⚠️ המוצר בבחינה ⚠️"
+
         kashrut_type = product_info[0]['kashrutTypes'][0]
         if kashrut_type == "לא כשר":
             return "❌ לא כשר"
         logger.debug("Kosher")
         return f"✅ {kashrut_type} ✅" + product_info[0]['kashrutCerts'][0]
+
     except Exception as e:
+        logger.debug(f"request: {url} payload: {payload}")
+        logger.debug(f"response: {response.json()}")
         logger.exception("error while asking GOK, Try again later")
