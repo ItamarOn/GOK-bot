@@ -3,14 +3,18 @@ from fastapi import FastAPI, Request, Response
 from twilio.twiml.messaging_response import MessagingResponse
 from engine import check_barcode
 from config import logger
+import requests
+import os
 
 app = FastAPI()
 
+# basic health check endpoint for any browser
 @app.get("/health_check")
 async def health_check():
     return {"status": "ok1"}
 
 
+# full cycle processing endpoint for Twilio webhook
 @app.post("/process")
 async def process(request: Request):
     logger.debug('start process')
@@ -34,3 +38,52 @@ async def process(request: Request):
             resp.message("Not a pic and no digits found in the text 😢")
     logger.debug('end process')
     return Response(content=str(resp), media_type="application/xml")
+
+# Cycle for Meta develop:
+
+VERIFY_TOKEN = os.getenv("WHATSAPP_VERIFY_TOKEN")
+ACCESS_TOKEN = os.getenv("WHATSAPP_TOKEN")
+PHONE_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID")
+
+
+@app.get("/webhook")
+async def verify_webhook(request: Request):
+    mode = request.query_params.get("hub.mode")
+    token = request.query_params.get("hub.verify_token")
+    challenge = request.query_params.get("hub.challenge")
+
+    if mode == "subscribe" and token == VERIFY_TOKEN:
+        return int(challenge)
+    return {"status": "forbidden"}
+
+
+@app.post("/webhook")
+async def receive_message(request: Request):
+    data = await request.json()
+    print("Incoming:", data)
+
+    if "messages" in data.get("entry", [{}])[0].get("changes", [{}])[0].get("value", {}):
+        message = data["entry"][0]["changes"][0]["value"]["messages"][0]
+        from_number = message["from"]
+        text = message["text"]["body"]
+
+        reply = f"הודעה התקבלה: {text}"
+        send_message(from_number, reply)
+
+    return {"status": "received"}
+
+
+def send_message(to: str, text: str):
+    url = f"https://graph.facebook.com/v22.0/{PHONE_ID}/messages"
+    headers = {
+        "Authorization": f"Bearer {ACCESS_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": to,
+        "type": "text",
+        "text": {"body": text}
+    }
+    response = requests.post(url, headers=headers, json=payload)
+    print("Send status:", response.text)
