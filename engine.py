@@ -2,26 +2,32 @@ import requests
 from PIL import Image
 from pyzbar.pyzbar import decode
 import io
+
 from config import (
     logger,
-    ACCOUNT_SID,
-    AUTH_TOKEN,
     GOK_API_TOKEN,
     WHITE_IP,
+    ACCESS_TOKEN,
 )
+from texts import TEXTS, GOK_STATUS
+
 
 def check_barcode(media_url: str, text=False) -> str:
     """
-    get link to the pic (MediaUrl0 of Twilio)
+    get link to the pic (MediaUrl0 of Twilio / Meta image URL)
     return the barcode data if found, else an error message
     """
     if text:
         logger.info(f"Barcode (text) detected: {media_url}")
-        return f"barcode: {media_url}\n" + ask_gok(media_url)
+        return (
+            TEXTS["barcode"]["prefix"]
+            + f"{media_url}\n"
+            + ask_gok(media_url)
+        )
 
     try:
-        # get the picture from the URL
-        response = requests.get(media_url, auth=(ACCOUNT_SID, AUTH_TOKEN))
+        headers = {"Authorization": f"Bearer {ACCESS_TOKEN}"}
+        response = requests.get(media_url, headers=headers)
         response.raise_for_status()
 
         image_bytes = io.BytesIO(response.content)
@@ -30,20 +36,27 @@ def check_barcode(media_url: str, text=False) -> str:
         # decode the barcode
         barcodes = decode(image)
         if not barcodes:
-            return "😲 לא נמצא ברקוד בתמונה"
+            return TEXTS["errors"]["barcode_not_found"]
 
         # first barcode
         barcode = barcodes[0]
         barcode_data = barcode.data.decode("utf-8")
         barcode_type = barcode.type
         logger.info(f"Barcode ({barcode_type}) detected: {barcode_data}")
+
         if barcode_type != "EAN13":
-            return "בתמונה מופיע ברקוד שאיננו נתמך, נא לשלוח תמונה בה יש ברקוד סטנדרטי בלבד"
-        return f"barcode: {barcode_data}\n" + ask_gok(barcode_data)
+            return TEXTS["errors"]["unsupported_barcode"]
+
+        return (
+            TEXTS["barcode"]["prefix"]
+            + f"{barcode_data}\n"
+            + ask_gok(barcode_data)
+        )
 
     except Exception as e:
         logger.exception("error while reading BarCode")
-        return "error while reading BarCode"
+        return TEXTS["errors"]["exception"]
+
 
 def ask_gok(barcode_data: str):
     url = "https://www.zekasher.com/api/v1/products"
@@ -51,7 +64,7 @@ def ask_gok(barcode_data: str):
         "queries": [
             {
                 "barcode": f"{barcode_data}",
-                # "status": 'מוצר מאושר ע"י הרב לשימוש במערכת'
+                # "status": GOK_STATUS['confirmed']
             }
         ],
         "user-ip": WHITE_IP,
@@ -73,28 +86,34 @@ def ask_gok(barcode_data: str):
     except Exception as e:
         logger.debug(f"request: {url} payload: {payload}")
         logger.exception("Cannot get basic response from GOK")
-        return "Server error while asking GOK, Try again later"
+        return TEXTS["errors"]["gok_server_error"]
 
     if not product_info:
         logger.debug("Doesn't exist in GOK system")
-        return "Doesn't exist in GOK system 😢"
+        return TEXTS["errors"]["gok_not_found"]
 
     try:
         logger.debug(f"product_info[0]:\n{product_info[0]}\n")
 
         status = product_info[0]['status']
 
-        if status != 'מוצר מאושר ע"י הרב לשימוש במערכת':
+        if status != GOK_STATUS['confirmed']:
             logger.debug(f"Product status: {status}")
-            return f"⚠️ המוצר בבחינה ⚠️"
+            return TEXTS["product_status"]["in_review"]
 
         kashrut_type = product_info[0]['kashrutTypes'][0]
-        if kashrut_type == "לא כשר":
-            return "❌ לא כשר"
+        if kashrut_type == GOK_STATUS['not_kosher']:
+            return TEXTS["product_status"]["not_kosher"]
+
         logger.debug("Kosher")
-        return f"✅ {kashrut_type} ✅" + product_info[0]['kashrutCerts'][0]
+        cert = product_info[0]['kashrutCerts'][0]
+        return TEXTS["product_status"]["kosher_template"].format(
+            kashrut_type=kashrut_type,
+            cert=cert,
+        )
 
     except Exception as e:
         logger.debug(f"request: {url} payload: {payload}")
         logger.debug(f"response: {response.json()}")
         logger.exception("error while asking GOK, Try again later")
+        return TEXTS["errors"]["gok_server_error"]

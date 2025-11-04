@@ -1,56 +1,31 @@
-# fast api application with a single POST endpoint get json, make some request and return json
-from fastapi import FastAPI, Request, Response
-from twilio.twiml.messaging_response import MessagingResponse
-from engine import check_barcode
-from config import logger
+from time import time
 import requests
-import os
+from fastapi import FastAPI, Request, Response
+
+from engine import check_barcode
+from config import logger, VERIFY_TOKEN, ACCESS_TOKEN, PHONE_ID
+from texts import TEXTS, HELP_KEYWORDS
 
 app = FastAPI()
 
-# basic health check endpoint for any browser
+
 @app.get("/health_check")
 async def health_check(request: Request):
     client_ip = request.client.host or "unknown"
     logger.debug(f"health_check from {client_ip}")
-    return {"status": "ok",
-            "ip": f"{client_ip}"}
+    return {
+        "status": "ok",
+        "ip": f"{client_ip}",
+        "time": f"{time()}",
+    }
 
 
-# full cycle processing endpoint for Twilio webhook
-@app.post("/process")
-async def process(request: Request):
-    logger.debug('start process')
-    form = await request.form()
-    data = dict(form)
-    logger.debug(f'massage from: {data.get("From", "")}')
-    resp = MessagingResponse()
-    if data.get('MessageType', '') == 'image':
-        img_link = data['MediaUrl0']
-        bc = check_barcode(img_link)
-        resp.message(bc)
-    else:
-        logger.debug('not a pic, checking if text include barcode digits')
-        # get 13 digits number from the text
-        text = data.get('Body', '')
-        digits = ''.join(filter(str.isdigit, text))
-        if digits:
-            bc = check_barcode(digits, text=True)
-            resp.message(bc)
-        else:
-            resp.message("Not a pic and no digits found in the text 😢")
-    logger.debug('end process')
-    return Response(content=str(resp), media_type="application/xml")
-
-# Cycle for Meta develop:
-
-VERIFY_TOKEN = os.getenv("WHATSAPP_VERIFY_TOKEN")
-ACCESS_TOKEN = os.getenv("WHATSAPP_TOKEN")
-PHONE_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID")
-
-
+# GET webhook - only for first Meta verification
 @app.get("/webhook")
 async def verify_webhook(request: Request):
+    logger.debug(f"webhook called")
+    logger.debug(f"request:\n{request.__dict__}\n")
+    logger.debug(f"VERIFY_TOKEN={VERIFY_TOKEN}")
     mode = request.query_params.get("hub.mode")
     token = request.query_params.get("hub.verify_token")
     challenge = request.query_params.get("hub.challenge")
@@ -66,6 +41,7 @@ async def verify_webhook(request: Request):
     return Response(content="forbidden", status_code=403)
 
 
+# POST webhook - main message processing
 @app.post("/webhook")
 async def receive_message(request: Request):
     data = await request.json()
@@ -75,27 +51,83 @@ async def receive_message(request: Request):
         if "messages" in data.get("entry", [{}])[0].get("changes", [{}])[0].get("value", {}):
             message = data["entry"][0]["changes"][0]["value"]["messages"][0]
             from_number = message["from"]
-            text = message["text"]["body"]
+            message_id = message["id"]
 
-            reply = f"הודעה התקבלה: {text}"
-            send_message(from_number, reply)
+            if message["type"] == "image":
+                image_url = await get_image_url(message)
+                if not image_url:
+                    logger.error("Failed to get image URL from Meta")
+                    send_message(
+                        from_number,
+                        TEXTS["errors"]["image_processing"],
+                        reply_to=message_id,
+                    )
+                    return {"status": "received"}
+
+                result = check_barcode(image_url)
+                send_message(from_number, result, reply_to=message_id)
+
+            elif message["type"] == "text":
+                text = message["text"]["body"].lower().strip()
+                logger.debug(f"Received text message: {text}")
+                if text in HELP_KEYWORDS:
+                    logger.info(f"Help message requested from {from_number}")
+                    send_message(from_number, TEXTS["welcome"])
+                    return {"status": "help_sent"}
+
+
+                digits = ''.join(filter(str.isdigit, text))
+                if digits:
+                    result = check_barcode(digits, text=True)
+                    send_message(from_number, result, reply_to=message_id)
+                else:
+                    reply = TEXTS["errors"]["invalid_message"]
+                    send_message(from_number, reply, reply_to=message_id)
+            else:
+                logger.info(f"Unsupported message type: {message['type']}")
+                send_message(
+                    from_number,
+                    TEXTS["errors"]["unsupported_type"],
+                    reply_to=message_id,
+                )
     except Exception as e:
         logger.exception(f"Error processing webhook")
 
     return {"status": "received"}
 
 
-def send_message(to: str, text: str):
+async def get_image_url(message):
+    media_id = message["image"]["id"]
+    image_info_url = f"https://graph.facebook.com/v22.0/{media_id}"
+    headers = {"Authorization": f"Bearer {ACCESS_TOKEN}"}
+    image_info = requests.get(image_info_url, headers=headers).json()
+    logger.debug(f"Image info: {image_info}")
+    image_url = image_info.get("url")
+    return image_url
+
+
+def send_message(to: str, text: str, reply_to: str = None):
     url = f"https://graph.facebook.com/v22.0/{PHONE_ID}/messages"
     headers = {
         "Authorization": f"Bearer {ACCESS_TOKEN}",
         "Content-Type": "application/json"
     }
+
     payload = {
         "messaging_product": "whatsapp",
+        "recipient_type": "individual",
         "to": to,
         "type": "text",
-        "text": {"body": text}
+        "text": {
+            "preview_url": False,
+            "body": text
+        }
     }
+
+    if reply_to:
+        payload["context"] = {"message_id": reply_to}
+
+    logger.debug(f"Sending payload: {payload}")
+
     response = requests.post(url, headers=headers, json=payload)
     logger.info(f"Send status: {response.status_code} | {response.text}")
