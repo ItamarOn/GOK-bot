@@ -55,23 +55,32 @@ async def verify_webhook(request: Request):
     token = request.query_params.get("hub.verify_token")
     challenge = request.query_params.get("hub.challenge")
 
+    client_ip = request.client.host
+    logger.debug(f"Webhook verification attempt from {client_ip}")
+
+    # Meta expects a *plain text response* with the challenge
     if mode == "subscribe" and token == VERIFY_TOKEN:
-        return int(challenge)
-    return {"status": "forbidden"}
+        logger.info("Webhook verified successfully ✅")
+        return Response(content=challenge, media_type="text/plain")
+    logger.warning(f"Webhook verification failed: mode={mode}, token={token}")
+    return Response(content="forbidden", status_code=403)
 
 
 @app.post("/webhook")
 async def receive_message(request: Request):
     data = await request.json()
-    print("Incoming:", data)
+    logger.debug(f"Incoming webhook: {data}")
 
-    if "messages" in data.get("entry", [{}])[0].get("changes", [{}])[0].get("value", {}):
-        message = data["entry"][0]["changes"][0]["value"]["messages"][0]
-        from_number = message["from"]
-        text = message["text"]["body"]
+    try:
+        if "messages" in data.get("entry", [{}])[0].get("changes", [{}])[0].get("value", {}):
+            message = data["entry"][0]["changes"][0]["value"]["messages"][0]
+            from_number = message["from"]
+            text = message["text"]["body"]
 
-        reply = f"הודעה התקבלה: {text}"
-        send_message(from_number, reply)
+            reply = f"הודעה התקבלה: {text}"
+            send_message(from_number, reply)
+    except Exception as e:
+        logger.exception(f"Error processing webhook")
 
     return {"status": "received"}
 
@@ -89,4 +98,4 @@ def send_message(to: str, text: str):
         "text": {"body": text}
     }
     response = requests.post(url, headers=headers, json=payload)
-    print("Send status:", response.text)
+    logger.info(f"Send status: {response.status_code} | {response.text}")
