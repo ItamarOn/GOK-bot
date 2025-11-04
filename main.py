@@ -10,8 +10,11 @@ app = FastAPI()
 
 # basic health check endpoint for any browser
 @app.get("/health_check")
-async def health_check():
-    return {"status": "ok1"}
+async def health_check(request: Request):
+    client_ip = request.client.host or "unknown"
+    logger.debug(f"health_check from {client_ip}")
+    return {"status": "ok",
+            "ip": f"{client_ip}"}
 
 
 # full cycle processing endpoint for Twilio webhook
