@@ -61,7 +61,7 @@ async def verify_webhook(request: Request):
     # Meta expects a *plain text response* with the challenge
     if mode == "subscribe" and token == VERIFY_TOKEN:
         logger.info("Webhook verified successfully ✅")
-        return Response(content=challenge, media_type="text/plain")
+        return Response(content=str(challenge), media_type="text/plain")
     logger.warning(f"Webhook verification failed: mode={mode}, token={token}")
     return Response(content="forbidden", status_code=403)
 
