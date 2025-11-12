@@ -112,7 +112,7 @@ def ask_gok(barcode_data: str, retry_count=0):
             return TEXTS["product_status"]["not_kosher"]
 
         logger.debug("Kosher")
-        cert = product_info[0]['kashrutCerts'][0]
+        cert = product_info[0]['kashrutCerts'][0] if product_info[0]['kashrutCerts'] else ''
         return TEXTS["product_status"]["kosher_template"].format(
             kashrut_type=kashrut_type,
             cert=cert,
@@ -121,5 +121,5 @@ def ask_gok(barcode_data: str, retry_count=0):
     except Exception as e:
         logger.debug(f"request: {url} payload: {payload}")
         logger.debug(f"response: {response.json()}")
-        logger.exception("error while asking GOK, Try again later")
-        return TEXTS["errors"]["gok_server_error"]
+        logger.exception("200 OK for asking GOK, But error for parsing")
+        return TEXTS["errors"]["internal_logic_error"]
