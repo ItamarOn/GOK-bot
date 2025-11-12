@@ -45,10 +45,10 @@ async def verify_webhook(request: Request):
 @app.post("/webhook")
 async def receive_message(request: Request):
     data = await request.json()
-    logger.debug(f"Incoming webhook: {data}")
 
     try:
         if "messages" in data.get("entry", [{}])[0].get("changes", [{}])[0].get("value", {}):
+            logger.debug(f"Incoming webhook with messages: {data}")
             message = data["entry"][0]["changes"][0]["value"]["messages"][0]
             from_number = message["from"]
             message_id = message["id"]
@@ -90,9 +90,16 @@ async def receive_message(request: Request):
                     TEXTS["errors"]["unsupported_type"],
                     reply_to=message_id,
                 )
+        elif "statuses" in data.get("entry", [{}])[0].get("changes", [{}])[0].get("value", {}):
+            entry_id = data["entry"][0]["id"]
+            statuses = data["entry"][0]["changes"][0]["value"]["statuses"]
+            for status in statuses:
+                logger.debug(f"Message {entry_id} status update: {status}")
+            return {"status": "received"}
     except Exception as e:
-        logger.exception(f"Error processing webhook")
+        logger.exception(f"Error processing messages or statuses webhook")
 
+    logger.debug(f"Incoming with no messages and no statuses: {data}")
     return {"status": "received"}
 
 
