@@ -60,7 +60,7 @@ def check_barcode(media_url: str, text=False) -> str:
         return TEXTS["errors"]["exception"]
 
 
-def ask_gok(barcode_data: str, retry_count=0):
+def ask_gok(barcode_data: str, retry_seconds=0):
     url = "https://www.zekasher.com/api/v1/products"
     payload = {
         "queries": [
@@ -84,11 +84,11 @@ def ask_gok(barcode_data: str, retry_count=0):
         response.raise_for_status()
         product_info = response.json()
     except Exception as e:
-        if retry_count == 0:
+        if retry_seconds == 0:
             sleep_time = random.randint(9, 25)
             logger.debug(f"retrying after {sleep_time} seconds. due to exception: {e}")
             time.sleep(sleep_time)
-            return ask_gok(barcode_data, retry_count=1)
+            return ask_gok(barcode_data, retry_seconds=sleep_time)
         else:
             logger.debug(f"request: {url} payload: {payload}")
             logger.exception("Cannot get basic response from GOK")
@@ -99,6 +99,7 @@ def ask_gok(barcode_data: str, retry_count=0):
         return TEXTS["errors"]["gok_not_found"]
 
     try:
+        logger.debug(f'retry after {retry_seconds} seconds') if retry_seconds else None
         logger.debug(f"product_info[0]:\n{product_info[0]}\n")
 
         status = product_info[0]['status']
