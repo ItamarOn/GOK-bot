@@ -28,7 +28,7 @@ async def redis_health():
     healthy = await duplicate_checker.ping()
     return {"redis": "ok" if healthy else "unreachable"}
 
-@app.get("/health/redis/keys", tags=["system"])
+@app.get("/health/redis/count", tags=["system"])
 async def redis_keys_count():
     count = await duplicate_checker.count_keys()
     return {"keys": count}
