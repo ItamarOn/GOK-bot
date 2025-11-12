@@ -25,6 +25,8 @@ VERIFY_TOKEN = os.getenv("WHATSAPP_VERIFY_TOKEN")
 ACCESS_TOKEN = os.getenv("WHATSAPP_TOKEN")
 PHONE_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID")
 
+# for Redis connection (duplicate checker)
+REDIS_URL = os.getenv("REDIS_URL")
 
 if not VERIFY_TOKEN or not ACCESS_TOKEN or not GOK_API_TOKEN or not WHITE_IP:
     raise RuntimeError("Missing credentials — check .env or Render Environment settings.")

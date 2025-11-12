@@ -1,15 +1,40 @@
 from time import time
 import requests
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Response
 
 from engine import check_barcode
 from config import logger, VERIFY_TOKEN, ACCESS_TOKEN, PHONE_ID
 from texts import TEXTS, HELP_KEYWORDS
+from ducplicate_checker import DuplicateChecker
 
-app = FastAPI()
+duplicate_checker = DuplicateChecker()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Handle startup and shutdown lifecycle for FastAPI"""
+    await duplicate_checker.connect()
+    logger.info("Redis connected successfully")
+    yield
+    if duplicate_checker.client:
+        await duplicate_checker.client.close()
+        logger.info("Redis connection closed")
 
 
-@app.get("/health_check")
+app = FastAPI(lifespan=lifespan)
+# Health Checks
+@app.get("/health/redis", tags=["system"])
+async def redis_health():
+    healthy = await duplicate_checker.ping()
+    return {"redis": "ok" if healthy else "unreachable"}
+
+@app.get("/health/redis/keys", tags=["system"])
+async def redis_keys_count():
+    count = await duplicate_checker.count_keys()
+    return {"keys": count}
+
+
+@app.get("/health", tags=["system"])
 async def health_check(request: Request):
     client_ip = request.client.host or "unknown"
     logger.debug(f"health_check from {client_ip}")
@@ -21,7 +46,7 @@ async def health_check(request: Request):
 
 
 # GET webhook - only for first Meta verification
-@app.get("/webhook")
+@app.get("/webhook", tags=["whatsapp"])
 async def verify_webhook(request: Request):
     logger.debug(f"webhook called")
     logger.debug(f"request:\n{request.__dict__}\n")
@@ -42,7 +67,7 @@ async def verify_webhook(request: Request):
 
 
 # POST webhook - main message processing
-@app.post("/webhook")
+@app.post("/webhook", tags=["whatsapp"])
 async def receive_message(request: Request):
     data = await request.json()
 
@@ -52,6 +77,10 @@ async def receive_message(request: Request):
             message = data["entry"][0]["changes"][0]["value"]["messages"][0]
             from_number = message["from"]
             message_id = message["id"]
+
+            if await duplicate_checker.is_duplicate(message_id):
+                logger.info(f"Duplicate message {message_id} ignored")
+                return {"status": "duplicate_ignored"}
 
             if message["type"] == "image":
                 image_url = await get_image_url(message)
@@ -91,10 +120,9 @@ async def receive_message(request: Request):
                     reply_to=message_id,
                 )
         elif "statuses" in data.get("entry", [{}])[0].get("changes", [{}])[0].get("value", {}):
-            entry_id = data["entry"][0]["id"]
             statuses = data["entry"][0]["changes"][0]["value"]["statuses"]
             for status in statuses:
-                logger.debug(f"Message {entry_id} status update: {status}")
+                logger.debug(f"message {status.get('id')} status update: {status.get('status')}")
             return {"status": "received"}
     except Exception as e:
         logger.exception(f"Error processing messages or statuses webhook")
