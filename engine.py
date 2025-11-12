@@ -1,7 +1,9 @@
+import random
+import time
 import requests
+import io
 from PIL import Image
 from pyzbar.pyzbar import decode
-import io
 
 from config import (
     logger,
@@ -58,17 +60,15 @@ def check_barcode(media_url: str, text=False) -> str:
         return TEXTS["errors"]["exception"]
 
 
-def ask_gok(barcode_data: str):
+def ask_gok(barcode_data: str, retry_count=0):
     url = "https://www.zekasher.com/api/v1/products"
     payload = {
         "queries": [
             {
                 "barcode": f"{barcode_data}",
-                # "status": GOK_STATUS['confirmed']
             }
         ],
         "user-ip": WHITE_IP,
-        # "button_id": ""
     }
 
     headers = {
@@ -84,9 +84,15 @@ def ask_gok(barcode_data: str):
         response.raise_for_status()
         product_info = response.json()
     except Exception as e:
-        logger.debug(f"request: {url} payload: {payload}")
-        logger.exception("Cannot get basic response from GOK")
-        return TEXTS["errors"]["gok_server_error"]
+        if retry_count == 0:
+            sleep_time = random.randint(9, 25)
+            logger.debug(f"retrying after {sleep_time} seconds. due to exception: {e}")
+            time.sleep(sleep_time)
+            return ask_gok(barcode_data, retry_count=1)
+        else:
+            logger.debug(f"request: {url} payload: {payload}")
+            logger.exception("Cannot get basic response from GOK")
+            return TEXTS["errors"]["gok_server_error"]
 
     if not product_info:
         logger.debug("Doesn't exist in GOK system")
