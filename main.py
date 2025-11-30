@@ -5,7 +5,7 @@ from fastapi import FastAPI, Request, Response
 
 from engine import check_barcode
 from config import logger, GREEN_ID, GREEN_TOKEN
-from texts import TEXTS, HELP_KEYWORDS
+from texts import TEXTS, HELP_KEYWORDS, THANKS_KEYWORDS
 from ducplicate_checker import DuplicateChecker
 
 duplicate_checker = DuplicateChecker()
@@ -44,164 +44,68 @@ async def health_check(request: Request):
         "time": f"{time()}",
     }
 
-#
-# # GET webhook - only for first Meta verification
-# @app.get("/webhook", tags=["whatsapp"])
-# async def verify_webhook(request: Request):
-#     logger.debug(f"webhook called")
-#     logger.debug(f"request:\n{request.__dict__}\n")
-#     logger.debug(f"VERIFY_TOKEN={VERIFY_TOKEN}")
-#     mode = request.query_params.get("hub.mode")
-#     token = request.query_params.get("hub.verify_token")
-#     challenge = request.query_params.get("hub.challenge")
-#
-#     client_ip = request.client.host
-#     logger.debug(f"Webhook verification attempt from {client_ip}")
-#
-#     # Meta expects a *plain text response* with the challenge
-#     if mode == "subscribe" and token == VERIFY_TOKEN:
-#         logger.info("Webhook verified successfully ✅")
-#         return Response(content=str(challenge), media_type="text/plain")
-#     logger.warning(f"Webhook verification failed: mode={mode}, token={token}")
-#     return Response(content="forbidden", status_code=403)
-#
-#
-# # POST webhook - main message processing
-# @app.post("/webhook", tags=["whatsapp"])
-# async def receive_message(request: Request):
-#     data = await request.json()
-#
-#     try:
-#         if "messages" in data.get("entry", [{}])[0].get("changes", [{}])[0].get("value", {}):
-#             logger.debug(f"Incoming webhook with messages: {data}")
-#             message = data["entry"][0]["changes"][0]["value"]["messages"][0]
-#             from_number = message["from"]
-#             message_id = message["id"]
-#
-#             if await duplicate_checker.is_duplicate(message_id):
-#                 logger.info(f"Duplicate message {message_id} ignored")
-#                 return {"status": "duplicate_ignored"}
-#
-#             if message["type"] == "image":
-#                 image_url = await get_image_url(message)
-#                 if not image_url:
-#                     logger.error("Failed to get image URL from Meta")
-#                     send_message(
-#                         from_number,
-#                         TEXTS["errors"]["image_processing"],
-#                         reply_to=message_id,
-#                     )
-#                     return {"status": "received"}
-#
-#                 result = check_barcode(image_url)
-#                 send_message(from_number, result, reply_to=message_id)
-#
-#             elif message["type"] == "text":
-#                 text = message["text"]["body"].lower().strip()
-#                 logger.debug(f"Received text message: {text}")
-#                 if text in HELP_KEYWORDS:
-#                     logger.info(f"Help message requested from {from_number}")
-#                     send_message(from_number, TEXTS["welcome"])
-#                     return {"status": "help_sent"}
-#
-#
-#                 digits = ''.join(filter(str.isdigit, text))
-#                 if digits:
-#                     result = check_barcode(digits, text=True)
-#                     send_message(from_number, result, reply_to=message_id)
-#                 else:
-#                     reply = TEXTS["errors"]["invalid_message"]
-#                     send_message(from_number, reply, reply_to=message_id)
-#             else:
-#                 logger.info(f"Unsupported message type: {message['type']}")
-#                 send_message(
-#                     from_number,
-#                     TEXTS["errors"]["unsupported_type"],
-#                     reply_to=message_id,
-#                 )
-#         elif "statuses" in data.get("entry", [{}])[0].get("changes", [{}])[0].get("value", {}):
-#             statuses = data["entry"][0]["changes"][0]["value"]["statuses"]
-#             for status in statuses:
-#                 logger.debug(f"message {status.get('id')} status update: {status.get('status')}")
-#             return {"status": "received"}
-#     except Exception as e:
-#         logger.exception(f"Error processing messages or statuses webhook")
-#
-#     logger.debug(f"Incoming with no messages and no statuses: {data}")
-#     return {"status": "received"}
-#
-#
-# async def get_image_url(message):
-#     media_id = message["image"]["id"]
-#     image_info_url = f"https://graph.facebook.com/v22.0/{media_id}"
-#     headers = {"Authorization": f"Bearer {ACCESS_TOKEN}"}
-#     image_info = requests.get(image_info_url, headers=headers).json()
-#     logger.debug(f"Image info: {image_info}")
-#     image_url = image_info.get("url")
-#     return image_url
-#
-#
-# def send_message(to: str, text: str, reply_to: str = None):
-#     url = f"https://graph.facebook.com/v22.0/{PHONE_ID}/messages"
-#     headers = {
-#         "Authorization": f"Bearer {ACCESS_TOKEN}",
-#         "Content-Type": "application/json"
-#     }
-#
-#     payload = {
-#         "messaging_product": "whatsapp",
-#         "recipient_type": "individual",
-#         "to": to,
-#         "type": "text",
-#         "text": {
-#             "preview_url": False,
-#             "body": text
-#         }
-#     }
-#
-#     if reply_to:
-#         payload["context"] = {"message_id": reply_to}
-#
-#     logger.debug(f"Sending payload: {payload}")
-#
-#     response = requests.post(url, headers=headers, json=payload)
-#     logger.info(f"Send status: {response.status_code} | {response.text}")
-#
-#
 
 @app.post("/webhook-green", tags=["whatsapp"])
 async def green_webhook(request: Request):
     data = await request.json()
     logger.debug(f"Green incoming: {data}")
 
-    # Green incoming: {'typeWebhook': 'incomingMessageReceived',
-    #                  'instanceData': {'idInstance': 7105398750,
-    #                                   'wid': '972556815085@c.us',
-    #                                   'typeInstance': 'whatsapp'
-    #                                   },
-    #                  'timestamp': 1764531848,
-    #                  'idMessage': 'AC9335C6B9C6B5CCAFEC5DB341B6F71E',
-    #                  'senderData': {'chatId': '972547271571@c.us',
-    #                                 'chatName': '😎',
-    #                                 'sender': '972547271571@c.us',
-    #                                 'senderName': '😎',
-    #                                 'senderContactName': ''
-    #                                 },
-    #                  'messageData': {'typeMessage': 'textMessage',
-    #                                  'textMessageData': {'textMessage': 'הלו?'}
-    #                                  }
-    #                     }
+    # TEXT:
+    # {'typeWebhook': 'incomingMessageReceived',
+    #  'instanceData': {'idInstance': 7105398750,
+    #                   'wid': '972556815085@c.us',
+    #                   'typeInstance': 'whatsapp'
+    #                   },
+    #  'timestamp': 1764531848,
+    #  'idMessage': 'AC9335C6B9C6B5CCAFEC5DB341B6F71E',
+    #  'senderData': {'chatId': '972547271571@c.us',
+    #                 'chatName': '😎',
+    #                 'sender': '972547271571@c.us',
+    #                 'senderName': '😎',
+    #                 'senderContactName': ''
+    #                 },
+    #  'messageData': {'typeMessage': 'textMessage',
+    #                  'textMessageData': {'textMessage': 'הלו?'}
+    #                  }
+    #     }
+    #
+    # IMAGE:
+    # {'typeWebhook': 'incomingMessageReceived',
+    # 'instanceData': {'idInstance': 7105398750,
+    #                  'wid': '972556815085@c.us',
+    #                  'typeInstance': 'whatsapp'
+    #                  },
+    # 'timestamp': 1764533249,
+    # 'idMessage': 'ACA03B1F1029CA2081E3EB455844CF50',
+    # 'senderData': {'chatId': '972547271571@c.us',
+    #                'chatName': '😎',
+    #                'sender': '972547271571@c.us',
+    #                'senderName': '😎',
+    #                'senderContactName': ''
+    #                },
+    # 'messageData': {'typeMessage': 'imageMessage',
+    #                 'fileMessageData': {'downloadUrl': 'https://do-media-7105.fra1.digitaloceanspaces.com/7105398750/9182bc37-9d40-4274-b7c7-2ed782051329.jpg',
+    #                                     'caption': '',
+    #                                     'fileName': '9182bc37-9d40-4274-b7c7-2ed782051329.jpg',
+    #                                     'jpegThumbnail': '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDABsSFBcUERsXFhceHBsgKEIrKCUlKFE6PTBCYFVlZF9VXVtqeJmBanGQc1tdhbWGkJ6jq62rZ4C8ybqmx5moq6T/2wBDARweHigjKE4rK06kbl1upKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKT/wgARCABIAEgDASIAAhEBAxEB/8QAGgAAAwEBAQEAAAAAAAAAAAAAAAMEAgEFBv/EABgBAAMBAQAAAAAAAAAAAAAAAAECAwAE/9oADAMBAAIQAxAAAABLPOVLqo9LxXqfd+dqlM56Mei6tFFYQlLIdEWr9NpVVZZEtJWeg4BX2qvRNrwiyb5gJ1NdMuiLg7Ncm4tpNCbIsYMK8a3NtGQaJYRojYUHeht3obbAI//EACERAAICAQMFAQAAAAAAAAAAAAABAhESITFRAxATICJB/9oACAECAQE/AKQ4qqILHQb4Eu2L2F0p8HikNSW5DcVn0ZSX6ZyIiehaG9SxMv0//8QAIREAAgECBgMAAAAAAAAAAAAAAAERAhIDEBMgMVEhMkH/2gAIAQMBAT8AWF9Q6XMlbbfk9UNdl9XZqPsuUyPEVXIrSrjKScnsjd//xAAoEAACAgEDAwQCAwEAAAAAAAABAgADEQQSITFBURMiMmEFcRAUQjP/2gAIAQEAAT8Ao1+KcO2Wz0MF1D5ZkAIHWa7Uf2GStBgSvQvXpURcEdTiUkaWgu/AAmv1Tam8senYSqwq3E09D6qzj4jqfESj0wACBWveavH9h8DjMBwYcFs4xKtTdWfbY0s1N+qAV24E1Fe4gAdO809HqWBc7R3Jm8VYqqIVDwWgswfRrYEdyYVLEk9TCh8TYTFrOYqkDgQlkBUjr3lKqWHjvLnQ+wKB4iabJza2B4EVBFr+syvRvY+0Jj7mo0racjcM58TeuPiRGNZ6xrK1rIRefMIZnBJAxH1G98HiJUSczSacMNxiYXOO8cMa8Hkz0DsOQM9pVSpGLq1j6HTPnAI/Us/Fofg5H7ln4qz/AC4MA2iVDZSPuW2mvpBqmYMdvQx9SVZQF6w6gg42iVEWdRjiGxt7DJ4g3t0P8U2blA8TV5DiJ/zeOuWWbSbT9TTjoPqNTttJyMHzKqUZQQY3Amnb3y9d5DAcQIwVh5hrYjMFbAk+ZQfd+pZYrMR4i3bRtmMx1KZKnEFtp/2YHt49xzPWfHyMW58fIz1rBzuMNhJ68xbiMZ6z//4AAwD/2Q==',
+    #                                     'isAnimated': False,
+    #                                     'mimeType': 'image/jpeg',
+    #                                     'forwardingScore': 1,
+    #                                     'isForwarded': True
+    #                                     }
+    #                 }
+    # }
     if data.get("typeWebhook") != "incomingMessageReceived":
         return {"status": "ignored"}
 
     sender = data["senderData"]["sender"]
-    message = data["messageData"]
-    msg_type = message["typeMessage"]
+    msg_data = data["messageData"]
+    msg_type = msg_data["typeMessage"]
     msg_id = data["idMessage"]
 
     # pic
     if msg_type == "imageMessage":
-        image_url = message["downloadUrl"]
+        image_url = msg_data["fileMessageData"]["downloadUrl"]
 
         # analyze image
         result = check_barcode(image_url)
@@ -210,7 +114,7 @@ async def green_webhook(request: Request):
 
     # text
     if msg_type == "textMessage":
-        text = message["textMessageData"]["textMessage"].lower().strip()
+        text = msg_data["textMessageData"]["textMessage"].lower().strip()
         if text in HELP_KEYWORDS:
             logger.info(f"Help message requested from {sender}")
             green_send_message(sender, TEXTS["welcome"])
@@ -221,8 +125,8 @@ async def green_webhook(request: Request):
         if digits:
             result = check_barcode(digits, text=True)
             green_send_message(sender, result, reply_to=msg_id)
-        else:
-            green_send_message(sender, TEXTS["errors"]["invalid_message"], reply_to=msg_id)
+        elif any(keyword in text for keyword in THANKS_KEYWORDS):
+            green_send_message(sender, TEXTS["thanks"], reply_to=msg_id)
 
         return {"status": "text_processed"}
 
@@ -233,6 +137,7 @@ async def green_webhook(request: Request):
         reply_to=msg_id
     )
     return {"status": "unsupported"}
+
 
 def green_send_message(chat_id: str, text: str, reply_to: str = None):
     url = f"https://api.green-api.com/waInstance{GREEN_ID}/sendMessage/{GREEN_TOKEN}"
