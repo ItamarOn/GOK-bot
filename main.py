@@ -174,25 +174,42 @@ async def green_webhook(request: Request):
     data = await request.json()
     logger.debug(f"Green incoming: {data}")
 
+    # Green incoming: {'typeWebhook': 'incomingMessageReceived',
+    #                  'instanceData': {'idInstance': 7105398750,
+    #                                   'wid': '972556815085@c.us',
+    #                                   'typeInstance': 'whatsapp'
+    #                                   },
+    #                  'timestamp': 1764531848,
+    #                  'idMessage': 'AC9335C6B9C6B5CCAFEC5DB341B6F71E',
+    #                  'senderData': {'chatId': '972547271571@c.us',
+    #                                 'chatName': '😎',
+    #                                 'sender': '972547271571@c.us',
+    #                                 'senderName': '😎',
+    #                                 'senderContactName': ''
+    #                                 },
+    #                  'messageData': {'typeMessage': 'textMessage',
+    #                                  'textMessageData': {'textMessage': 'הלו?'}
+    #                                  }
+    #                     }
     if data.get("typeWebhook") != "incomingMessageReceived":
         return {"status": "ignored"}
 
     sender = data["senderData"]["sender"]
     message = data["messageData"]
-    message_type = message["typeMessage"]
-    incoming_id = message["idMessage"]
+    msg_type = message["typeMessage"]
+    msg_id = data["idMessage"]
 
     # pic
-    if message_type == "imageMessage":
+    if msg_type == "imageMessage":
         image_url = message["downloadUrl"]
 
         # analyze image
         result = check_barcode(image_url)
-        green_send_message(sender, result, reply_to=incoming_id)
+        green_send_message(sender, result, reply_to=msg_id)
         return {"status": "image_processed"}
 
     # text
-    if message_type == "textMessage":
+    if msg_type == "textMessage":
         text = message["textMessageData"]["textMessage"].lower().strip()
         if text in HELP_KEYWORDS:
             logger.info(f"Help message requested from {sender}")
@@ -203,9 +220,9 @@ async def green_webhook(request: Request):
         digits = "".join(filter(str.isdigit, text))
         if digits:
             result = check_barcode(digits, text=True)
-            green_send_message(sender, result, reply_to=incoming_id)
+            green_send_message(sender, result, reply_to=msg_id)
         else:
-            green_send_message(sender, TEXTS["errors"]["invalid_message"], reply_to=incoming_id)
+            green_send_message(sender, TEXTS["errors"]["invalid_message"], reply_to=msg_id)
 
         return {"status": "text_processed"}
 
@@ -213,7 +230,7 @@ async def green_webhook(request: Request):
     green_send_message(
         sender,
         TEXTS["errors"]["unsupported_type"],
-        reply_to=incoming_id
+        reply_to=msg_id
     )
     return {"status": "unsupported"}
 
