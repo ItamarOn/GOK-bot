@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Response
 
 from engine import check_barcode
-from config import logger, VERIFY_TOKEN, ACCESS_TOKEN, PHONE_ID
+from config import logger, GREEN_ID, GREEN_TOKEN
 from texts import TEXTS, HELP_KEYWORDS
 from ducplicate_checker import DuplicateChecker
 
@@ -44,125 +44,189 @@ async def health_check(request: Request):
         "time": f"{time()}",
     }
 
+#
+# # GET webhook - only for first Meta verification
+# @app.get("/webhook", tags=["whatsapp"])
+# async def verify_webhook(request: Request):
+#     logger.debug(f"webhook called")
+#     logger.debug(f"request:\n{request.__dict__}\n")
+#     logger.debug(f"VERIFY_TOKEN={VERIFY_TOKEN}")
+#     mode = request.query_params.get("hub.mode")
+#     token = request.query_params.get("hub.verify_token")
+#     challenge = request.query_params.get("hub.challenge")
+#
+#     client_ip = request.client.host
+#     logger.debug(f"Webhook verification attempt from {client_ip}")
+#
+#     # Meta expects a *plain text response* with the challenge
+#     if mode == "subscribe" and token == VERIFY_TOKEN:
+#         logger.info("Webhook verified successfully ✅")
+#         return Response(content=str(challenge), media_type="text/plain")
+#     logger.warning(f"Webhook verification failed: mode={mode}, token={token}")
+#     return Response(content="forbidden", status_code=403)
+#
+#
+# # POST webhook - main message processing
+# @app.post("/webhook", tags=["whatsapp"])
+# async def receive_message(request: Request):
+#     data = await request.json()
+#
+#     try:
+#         if "messages" in data.get("entry", [{}])[0].get("changes", [{}])[0].get("value", {}):
+#             logger.debug(f"Incoming webhook with messages: {data}")
+#             message = data["entry"][0]["changes"][0]["value"]["messages"][0]
+#             from_number = message["from"]
+#             message_id = message["id"]
+#
+#             if await duplicate_checker.is_duplicate(message_id):
+#                 logger.info(f"Duplicate message {message_id} ignored")
+#                 return {"status": "duplicate_ignored"}
+#
+#             if message["type"] == "image":
+#                 image_url = await get_image_url(message)
+#                 if not image_url:
+#                     logger.error("Failed to get image URL from Meta")
+#                     send_message(
+#                         from_number,
+#                         TEXTS["errors"]["image_processing"],
+#                         reply_to=message_id,
+#                     )
+#                     return {"status": "received"}
+#
+#                 result = check_barcode(image_url)
+#                 send_message(from_number, result, reply_to=message_id)
+#
+#             elif message["type"] == "text":
+#                 text = message["text"]["body"].lower().strip()
+#                 logger.debug(f"Received text message: {text}")
+#                 if text in HELP_KEYWORDS:
+#                     logger.info(f"Help message requested from {from_number}")
+#                     send_message(from_number, TEXTS["welcome"])
+#                     return {"status": "help_sent"}
+#
+#
+#                 digits = ''.join(filter(str.isdigit, text))
+#                 if digits:
+#                     result = check_barcode(digits, text=True)
+#                     send_message(from_number, result, reply_to=message_id)
+#                 else:
+#                     reply = TEXTS["errors"]["invalid_message"]
+#                     send_message(from_number, reply, reply_to=message_id)
+#             else:
+#                 logger.info(f"Unsupported message type: {message['type']}")
+#                 send_message(
+#                     from_number,
+#                     TEXTS["errors"]["unsupported_type"],
+#                     reply_to=message_id,
+#                 )
+#         elif "statuses" in data.get("entry", [{}])[0].get("changes", [{}])[0].get("value", {}):
+#             statuses = data["entry"][0]["changes"][0]["value"]["statuses"]
+#             for status in statuses:
+#                 logger.debug(f"message {status.get('id')} status update: {status.get('status')}")
+#             return {"status": "received"}
+#     except Exception as e:
+#         logger.exception(f"Error processing messages or statuses webhook")
+#
+#     logger.debug(f"Incoming with no messages and no statuses: {data}")
+#     return {"status": "received"}
+#
+#
+# async def get_image_url(message):
+#     media_id = message["image"]["id"]
+#     image_info_url = f"https://graph.facebook.com/v22.0/{media_id}"
+#     headers = {"Authorization": f"Bearer {ACCESS_TOKEN}"}
+#     image_info = requests.get(image_info_url, headers=headers).json()
+#     logger.debug(f"Image info: {image_info}")
+#     image_url = image_info.get("url")
+#     return image_url
+#
+#
+# def send_message(to: str, text: str, reply_to: str = None):
+#     url = f"https://graph.facebook.com/v22.0/{PHONE_ID}/messages"
+#     headers = {
+#         "Authorization": f"Bearer {ACCESS_TOKEN}",
+#         "Content-Type": "application/json"
+#     }
+#
+#     payload = {
+#         "messaging_product": "whatsapp",
+#         "recipient_type": "individual",
+#         "to": to,
+#         "type": "text",
+#         "text": {
+#             "preview_url": False,
+#             "body": text
+#         }
+#     }
+#
+#     if reply_to:
+#         payload["context"] = {"message_id": reply_to}
+#
+#     logger.debug(f"Sending payload: {payload}")
+#
+#     response = requests.post(url, headers=headers, json=payload)
+#     logger.info(f"Send status: {response.status_code} | {response.text}")
+#
+#
 
-# GET webhook - only for first Meta verification
-@app.get("/webhook", tags=["whatsapp"])
-async def verify_webhook(request: Request):
-    logger.debug(f"webhook called")
-    logger.debug(f"request:\n{request.__dict__}\n")
-    logger.debug(f"VERIFY_TOKEN={VERIFY_TOKEN}")
-    mode = request.query_params.get("hub.mode")
-    token = request.query_params.get("hub.verify_token")
-    challenge = request.query_params.get("hub.challenge")
-
-    client_ip = request.client.host
-    logger.debug(f"Webhook verification attempt from {client_ip}")
-
-    # Meta expects a *plain text response* with the challenge
-    if mode == "subscribe" and token == VERIFY_TOKEN:
-        logger.info("Webhook verified successfully ✅")
-        return Response(content=str(challenge), media_type="text/plain")
-    logger.warning(f"Webhook verification failed: mode={mode}, token={token}")
-    return Response(content="forbidden", status_code=403)
-
-
-# POST webhook - main message processing
-@app.post("/webhook", tags=["whatsapp"])
-async def receive_message(request: Request):
+@app.post("/webhook-green", tags=["whatsapp"])
+async def green_webhook(request: Request):
     data = await request.json()
+    logger.debug(f"Green incoming: {data}")
 
-    try:
-        if "messages" in data.get("entry", [{}])[0].get("changes", [{}])[0].get("value", {}):
-            logger.debug(f"Incoming webhook with messages: {data}")
-            message = data["entry"][0]["changes"][0]["value"]["messages"][0]
-            from_number = message["from"]
-            message_id = message["id"]
+    if data.get("typeWebhook") != "incomingMessageReceived":
+        return {"status": "ignored"}
 
-            if await duplicate_checker.is_duplicate(message_id):
-                logger.info(f"Duplicate message {message_id} ignored")
-                return {"status": "duplicate_ignored"}
+    sender = data["senderData"]["sender"]
+    message = data["messageData"]
+    message_type = message["typeMessage"]
+    incoming_id = message["idMessage"]
 
-            if message["type"] == "image":
-                image_url = await get_image_url(message)
-                if not image_url:
-                    logger.error("Failed to get image URL from Meta")
-                    send_message(
-                        from_number,
-                        TEXTS["errors"]["image_processing"],
-                        reply_to=message_id,
-                    )
-                    return {"status": "received"}
+    # pic
+    if message_type == "imageMessage":
+        image_url = message["downloadUrl"]
 
-                result = check_barcode(image_url)
-                send_message(from_number, result, reply_to=message_id)
+        # analyze image
+        result = check_barcode(image_url)
+        green_send_message(sender, result, reply_to=incoming_id)
+        return {"status": "image_processed"}
 
-            elif message["type"] == "text":
-                text = message["text"]["body"].lower().strip()
-                logger.debug(f"Received text message: {text}")
-                if text in HELP_KEYWORDS:
-                    logger.info(f"Help message requested from {from_number}")
-                    send_message(from_number, TEXTS["welcome"])
-                    return {"status": "help_sent"}
+    # text
+    if message_type == "textMessage":
+        text = message["textMessageData"]["textMessage"].lower().strip()
+        if text in HELP_KEYWORDS:
+            logger.info(f"Help message requested from {sender}")
+            green_send_message(sender, TEXTS["welcome"])
+            return {"status": "help_sent"}
 
 
-                digits = ''.join(filter(str.isdigit, text))
-                if digits:
-                    result = check_barcode(digits, text=True)
-                    send_message(from_number, result, reply_to=message_id)
-                else:
-                    reply = TEXTS["errors"]["invalid_message"]
-                    send_message(from_number, reply, reply_to=message_id)
-            else:
-                logger.info(f"Unsupported message type: {message['type']}")
-                send_message(
-                    from_number,
-                    TEXTS["errors"]["unsupported_type"],
-                    reply_to=message_id,
-                )
-        elif "statuses" in data.get("entry", [{}])[0].get("changes", [{}])[0].get("value", {}):
-            statuses = data["entry"][0]["changes"][0]["value"]["statuses"]
-            for status in statuses:
-                logger.debug(f"message {status.get('id')} status update: {status.get('status')}")
-            return {"status": "received"}
-    except Exception as e:
-        logger.exception(f"Error processing messages or statuses webhook")
+        digits = "".join(filter(str.isdigit, text))
+        if digits:
+            result = check_barcode(digits, text=True)
+            green_send_message(sender, result, reply_to=incoming_id)
+        else:
+            green_send_message(sender, TEXTS["errors"]["invalid_message"], reply_to=incoming_id)
 
-    logger.debug(f"Incoming with no messages and no statuses: {data}")
-    return {"status": "received"}
+        return {"status": "text_processed"}
 
+    # all the rest
+    green_send_message(
+        sender,
+        TEXTS["errors"]["unsupported_type"],
+        reply_to=incoming_id
+    )
+    return {"status": "unsupported"}
 
-async def get_image_url(message):
-    media_id = message["image"]["id"]
-    image_info_url = f"https://graph.facebook.com/v22.0/{media_id}"
-    headers = {"Authorization": f"Bearer {ACCESS_TOKEN}"}
-    image_info = requests.get(image_info_url, headers=headers).json()
-    logger.debug(f"Image info: {image_info}")
-    image_url = image_info.get("url")
-    return image_url
-
-
-def send_message(to: str, text: str, reply_to: str = None):
-    url = f"https://graph.facebook.com/v22.0/{PHONE_ID}/messages"
-    headers = {
-        "Authorization": f"Bearer {ACCESS_TOKEN}",
-        "Content-Type": "application/json"
-    }
-
+def green_send_message(chat_id: str, text: str, reply_to: str = None):
+    url = f"https://api.green-api.com/waInstance{GREEN_ID}/sendMessage/{GREEN_TOKEN}"
     payload = {
-        "messaging_product": "whatsapp",
-        "recipient_type": "individual",
-        "to": to,
-        "type": "text",
-        "text": {
-            "preview_url": False,
-            "body": text
-        }
+        "chatId": chat_id,
+        "message": text
     }
 
     if reply_to:
-        payload["context"] = {"message_id": reply_to}
+        payload["quotedMessageId"] = reply_to
 
-    logger.debug(f"Sending payload: {payload}")
-
-    response = requests.post(url, headers=headers, json=payload)
-    logger.info(f"Send status: {response.status_code} | {response.text}")
+    logger.debug(f"Green send payload: {payload}")
+    response = requests.post(url, json=payload)
+    logger.info(f"Green send status: {response.status_code} | {response.text}")
