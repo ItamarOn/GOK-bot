@@ -9,7 +9,6 @@ from config import (
     logger,
     GOK_API_TOKEN,
     WHITE_IP,
-    ACCESS_TOKEN,
 )
 from texts import TEXTS, GOK_STATUS
 
@@ -28,8 +27,7 @@ def check_barcode(media_url: str, text=False) -> str:
         )
 
     try:
-        headers = {"Authorization": f"Bearer {ACCESS_TOKEN}"}
-        response = requests.get(media_url, headers=headers)
+        response = requests.get(media_url)
         response.raise_for_status()
 
         image_bytes = io.BytesIO(response.content)
