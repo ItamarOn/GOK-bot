@@ -53,24 +53,15 @@ async def green_webhook(request: Request):
     if data.get("typeWebhook") != "incomingMessageReceived":
         return {"status": "ignored"}
 
-    sender = data["senderData"]["sender"]
+    sender_data = data["senderData"]
+    sender = sender_data["sender"]
     msg_data = data["messageData"]
     msg_type = msg_data["typeMessage"]
     msg_id = data["idMessage"]
 
     # if it is in group chat
-    if "@g.us" in msg_data.get("chatId", ""):
-        actual_sender = msg_data.get("senderId", sender)
-        group_name = msg_data.get("chatName", "Unknown Group")
-        logger.info(f"Group message from {group_name}: sender={actual_sender}")
-        # reply only for pic with barcode:
-        if msg_type == "imageMessage":
-            image_url = msg_data["fileMessageData"]["downloadUrl"]
-
-            # analyze image
-            result = check_barcode(image_url)
-            green_send_message(msg_data["chatId"], result, reply_to=msg_id)
-            return {"status": "group_image_processed"}
+    if "@g.us" in sender_data.get("chatId", ""):
+        return group_handler(sender_data, msg_data, msg_type, msg_id)
 
     # ignore duplicates
     if await duplicate_checker.is_duplicate(msg_id):
@@ -128,3 +119,25 @@ def green_send_message(chat_id: str, text: str, reply_to: str = None):
     logger.debug(f"Green send payload: {payload}")
     response = requests.post(url, json=payload)
     logger.info(f"Green send status: {response.status_code} | {response.text}")
+
+
+def group_handler(sender_data, msg_data, msg_type, msg_id):
+    actual_sender = sender_data.get("sender", "Unknown")
+    group_name = sender_data.get("chatName", "Unknown Group")
+    logger.info(f"Group {msg_type} from {group_name}: sender={actual_sender}")
+
+    # reply only for pic with barcode:
+    if msg_type == "imageMessage":
+        image_url = msg_data["fileMessageData"]["downloadUrl"]
+
+        # analyze image
+        result = check_barcode(image_url)
+        if result == TEXTS["errors"]["barcode_not_found"] or \
+           result == TEXTS["errors"]["unsupported_barcode"]:
+            logger.info(f"Group image ignored (no barcode): {msg_id} from {actual_sender} in {group_name}")
+            return {"status": "group_image_ignored"}
+
+        green_send_message(sender_data["chatId"], result, reply_to=msg_id)
+        return {"status": "group_image_processed"}
+
+    return {"status": "group_ignored"}

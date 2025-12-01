@@ -38,14 +38,16 @@ def check_barcode(media_url: str, text=False) -> str:
         if not barcodes:
             return TEXTS["errors"]["barcode_not_found"]
 
-        # first barcode
-        barcode = barcodes[0]
+        # only EAN** is supported
+        ean_barcodes = [barcode for barcode in barcodes if barcode.type.startswith("EAN")]
+        if not ean_barcodes:
+            logger.debug(f"Not EAN barcodes found: {barcodes}")
+            return TEXTS["errors"]["unsupported_barcode"]
+
+        barcode = ean_barcodes[0]
         barcode_data = barcode.data.decode("utf-8")
         barcode_type = barcode.type
         logger.info(f"Barcode ({barcode_type}) detected: {barcode_data}")
-
-        if barcode_type != "EAN13":
-            return TEXTS["errors"]["unsupported_barcode"]
 
         return (
             TEXTS["barcode"]["prefix"]
