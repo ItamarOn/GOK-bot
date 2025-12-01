@@ -50,6 +50,51 @@ async def green_webhook(request: Request):
     data = await request.json()
     logger.debug(f"Green incoming: {data}")
 
+    # TEXT:
+    # {'typeWebhook': 'incomingMessageReceived',
+    #  'instanceData': {'idInstance': 7105398750,
+    #                   'wid': '972556815085@c.us',
+    #                   'typeInstance': 'whatsapp'
+    #                   },
+    #  'timestamp': 1764531848,
+    #  'idMessage': 'AC9335C6B9C6B5CCAFEC5DB341B6F71E',
+    #  'senderData': {'chatId': '972547271571@c.us',
+    #                 'chatName': '😎',
+    #                 'sender': '972547271571@c.us',
+    #                 'senderName': '😎',
+    #                 'senderContactName': ''
+    #                 },
+    #  'messageData': {'typeMessage': 'textMessage',
+    #                  'textMessageData': {'textMessage': 'הלו?'}
+    #                  }
+    #     }
+    #
+    # IMAGE:
+    # {'typeWebhook': 'incomingMessageReceived',
+    # 'instanceData': {'idInstance': 7105398750,
+    #                  'wid': '972556815085@c.us',
+    #                  'typeInstance': 'whatsapp'
+    #                  },
+    # 'timestamp': 1764533249,
+    # 'idMessage': 'ACA03B1F1029CA2081E3EB455844CF50',
+    # 'senderData': {'chatId': '972547271571@c.us',
+    #                'chatName': '😎',
+    #                'sender': '972547271571@c.us',
+    #                'senderName': '😎',
+    #                'senderContactName': ''
+    #                },
+    # 'messageData': {'typeMessage': 'imageMessage',
+    #                 'fileMessageData': {'downloadUrl': 'https://do-media-7105.fra1.digitaloceanspaces.com/7105398750/9182bc37-9d40-4274-b7c7-2ed782051329.jpg',
+    #                                     'caption': '',
+    #                                     'fileName': '9182bc37-9d40-4274-b7c7-2ed782051329.jpg',
+    #                                     'jpegThumbnail': '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDABsSFBcUERsXFhceHBsgKEIrKCUlKFE6PTBCYFVlZF9VXVtqeJmBanGQc1tdhbWGkJ6jq62rZ4C8ybqmx5moq6T/2wBDARweHigjKE4rK06kbl1upKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKT/wgARCABIAEgDASIAAhEBAxEB/8QAGgAAAwEBAQEAAAAAAAAAAAAAAAMEAgEFBv/EABgBAAMBAQAAAAAAAAAAAAAAAAECAwAE/9oADAMBAAIQAxAAAABLPOVLqo9LxXqfd+dqlM56Mei6tFFYQlLIdEWr9NpVVZZEtJWeg4BX2qvRNrwiyb5gJ1NdMuiLg7Ncm4tpNCbIsYMK8a3NtGQaJYRojYUHeht3obbAI//EACERAAICAQMFAQAAAAAAAAAAAAABAhESITFRAxATICJB/9oACAECAQE/AKQ4qqILHQb4Eu2L2F0p8HikNSW5DcVn0ZSX6ZyIiehaG9SxMv0//8QAIREAAgECBgMAAAAAAAAAAAAAAAERAhIDEBMgMVEhMkH/2gAIAQMBAT8AWF9Q6XMlbbfk9UNdl9XZqPsuUyPEVXIrSrjKScnsjd//xAAoEAACAgEDAwQCAwEAAAAAAAABAgADEQQSITFBURMiMmEFcRAUQjP/2gAIAQEAAT8Ao1+KcO2Wz0MF1D5ZkAIHWa7Uf2GStBgSvQvXpURcEdTiUkaWgu/AAmv1Tam8senYSqwq3E09D6qzj4jqfESj0wACBWveavH9h8DjMBwYcFs4xKtTdWfbY0s1N+qAV24E1Fe4gAdO809HqWBc7R3Jm8VYqqIVDwWgswfRrYEdyYVLEk9TCh8TYTFrOYqkDgQlkBUjr3lKqWHjvLnQ+wKB4iabJza2B4EVBFr+syvRvY+0Jj7mo0racjcM58TeuPiRGNZ6xrK1rIRefMIZnBJAxH1G98HiJUSczSacMNxiYXOO8cMa8Hkz0DsOQM9pVSpGLq1j6HTPnAI/Us/Fofg5H7ln4qz/AC4MA2iVDZSPuW2mvpBqmYMdvQx9SVZQF6w6gg42iVEWdRjiGxt7DJ4g3t0P8U2blA8TV5DiJ/zeOuWWbSbT9TTjoPqNTttJyMHzKqUZQQY3Amnb3y9d5DAcQIwVh5hrYjMFbAk+ZQfd+pZYrMR4i3bRtmMx1KZKnEFtp/2YHt49xzPWfHyMW58fIz1rBzuMNhJ68xbiMZ6z//4AAwD/2Q==',
+    #                                     'isAnimated': False,
+    #                                     'mimeType': 'image/jpeg',
+    #                                     'forwardingScore': 1,
+    #                                     'isForwarded': True
+    #                                     }
+    #                 }
+    # }
     if data.get("typeWebhook") != "incomingMessageReceived":
         return {"status": "ignored"}
 
@@ -57,6 +102,11 @@ async def green_webhook(request: Request):
     msg_data = data["messageData"]
     msg_type = msg_data["typeMessage"]
     msg_id = data["idMessage"]
+
+    # ignore duplicates
+    if await duplicate_checker.is_duplicate(msg_id):
+        logger.info(f"Duplicate message ignored: {msg_id} from {sender}")
+        return {"status": "duplicate_ignored"}
 
     # pic
     if msg_type == "imageMessage":

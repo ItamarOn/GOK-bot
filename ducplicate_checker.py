@@ -62,4 +62,6 @@ class DuplicateChecker:
         if not self.client:
             logger.debug("restarting Redis connection for key count")
             await self.connect()
-        return await self.client.dbsize()
+        msgs_on_last_24h = await self.client.dbsize()
+        logger.info(f"Number of keys in Redis: {msgs_on_last_24h}")
+        return msgs_on_last_24h
