@@ -19,13 +19,14 @@ TEXTS = {
         "barcode_not_found": "😲 לא נמצא ברקוד בתמונה",
         "unsupported_barcode": "בתמונה מופיע ברקוד שאיננו נתמך, נא לשלוח תמונה בה יש ברקוד סטנדרטי בלבד.",
         "internal_logic_error": "שגיאת שרת, נסה שוב מאוחר יותר⏳ או פנה לתמיכה🛠️",
+        "out_of_working_hours":"כעת לילה בישראל 🤫😴✨\nהשתדלו לשלוח בשעות הפעילות",
 
         # GOK-related
         "gok_server_error": "שגיאת שרת בעת שאילתת GOK, נסה שוב מאוחר יותר⏳",
         "gok_not_found": "לא קיים מידע במערכת GOK😢",
     },
     "product_status": {
-        "in_review": "⚠️ המוצר בבחינה",
+        "in_review": "לא קיים מידע במערכת GOK🤷",
         "not_kosher": "❌ לא כשר",
         "kosher_template": "{kashrut_type} ✅{cert}",
     },
