@@ -2,7 +2,7 @@ import random
 import time
 import requests
 import io
-from PIL import Image
+from PIL import Image, ImageEnhance
 from pyzbar.pyzbar import decode
 
 from config import (
@@ -14,16 +14,13 @@ from texts import TEXTS, GOK_STATUS
 
 
 def extract_barcode_from_image(image: Image) -> list:
-    for angle in [0, 270, -45]:
-        if angle != 0:
-            rotated_image = image.rotate(angle, expand=True)
-        else:
-            rotated_image = image
+    barcodes = decode(image)
+    if barcodes:
+        return barcodes
 
-        barcodes = decode(rotated_image)
-        if barcodes:
-            return barcodes
-    return []
+    enhancer = ImageEnhance.Contrast(image)
+    contrast_image = enhancer.enhance(10)
+    return decode(contrast_image)
 
 
 def check_barcode(media_url: str, text=False) -> str:

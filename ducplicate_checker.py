@@ -1,4 +1,3 @@
-import os
 import redis.asyncio as redis
 from config import logger, REDIS_URL
 
