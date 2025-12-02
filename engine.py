@@ -13,6 +13,19 @@ from config import (
 from texts import TEXTS, GOK_STATUS
 
 
+def extract_barcode_from_image(image: Image) -> list:
+    for angle in [0, 270, -45]:
+        if angle != 0:
+            rotated_image = image.rotate(angle, expand=True)
+        else:
+            rotated_image = image
+
+        barcodes = decode(rotated_image)
+        if barcodes:
+            return barcodes
+    return []
+
+
 def check_barcode(media_url: str, text=False) -> str:
     """
     get link to the pic (MediaUrl0 of Twilio / Meta image URL)
@@ -33,8 +46,8 @@ def check_barcode(media_url: str, text=False) -> str:
         image_bytes = io.BytesIO(response.content)
         image = Image.open(image_bytes)
 
-        # decode the barcode
-        barcodes = decode(image)
+        barcodes = extract_barcode_from_image(image)
+
         if not barcodes:
             return TEXTS["errors"]["barcode_not_found"]
 
