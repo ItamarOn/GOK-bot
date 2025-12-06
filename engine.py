@@ -56,9 +56,10 @@ def check_barcode(media_url: str, text=False) -> str:
             return TEXTS["errors"]["unsupported_barcode"]
 
         if len(food_barcodes) > 1:
-            logger.info(f"{len(food_barcodes)} detected barcodes: {[bf.type for bf in food_barcodes]}")
+            logger.info(f"{len(food_barcodes)} detected barcodes: {food_barcodes}")
+            return TEXTS["errors"]["image_processing"]
 
-        barcode = food_barcodes[-1]
+        barcode = food_barcodes[0]
         barcode_data = barcode.data.decode("utf-8")
         barcode_type = barcode.type
         logger.info(f"Barcode ({barcode_type}) detected: {barcode_data}")
