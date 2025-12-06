@@ -115,19 +115,20 @@ def ask_gok(barcode_data: str, retry_seconds=0):
         logger.debug(f'retry after {retry_seconds} seconds') if retry_seconds else None
         logger.debug(f"product_info[0]:\n{product_info[0]}\n")
 
+        product_name = product_info[0].get('name', '') + '\n'
         status = product_info[0]['status']
 
         if status != GOK_STATUS['confirmed']:
             logger.debug(f"Product status: {status}")
-            return TEXTS["product_status"]["in_review"]
+            return product_name + TEXTS["product_status"]["in_review"]
 
         kashrut_type = product_info[0]['kashrutTypes'][0]
         if kashrut_type == GOK_STATUS['not_kosher']:
-            return TEXTS["product_status"]["not_kosher"]
+            return product_name + TEXTS["product_status"]["not_kosher"]
 
         logger.debug("Kosher")
         cert = product_info[0]['kashrutCerts'][0] if product_info[0]['kashrutCerts'] else ''
-        return TEXTS["product_status"]["kosher_template"].format(
+        return product_name + TEXTS["product_status"]["kosher_template"].format(
             kashrut_type=kashrut_type,
             cert=cert,
         )
