@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 
 from config import logger
+from services.admin import update_admin_startup, update_admin_shutdown
 from services.group import group_handler
 from services.personal_chat import personal_chat_handler
 from ducplicate_checker import DuplicateChecker
@@ -14,10 +15,12 @@ async def lifespan(app: FastAPI):
     """Handle startup and shutdown lifecycle for FastAPI"""
     await duplicate_checker.connect()
     logger.info("Redis connected successfully")
+    update_admin_startup()
     yield
     if duplicate_checker.client:
         await duplicate_checker.client.close()
         logger.info("Redis connection closed")
+        update_admin_shutdown()
 
 
 app = FastAPI(lifespan=lifespan)
