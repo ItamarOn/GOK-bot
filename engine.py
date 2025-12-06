@@ -55,6 +55,8 @@ def check_barcode(media_url: str, text=False) -> str:
             logger.debug(f"Not EAN barcodes found: {barcodes}")
             return TEXTS["errors"]["unsupported_barcode"]
 
+        logger.debug(f"{len(food_barcodes)} detected barcodes: {food_barcodes}")
+        logger.debug(f"{len(food_barcodes)} detected barcodes: {[bf.type for bf in food_barcodes]}")
         barcode = food_barcodes[0]
         barcode_data = barcode.data.decode("utf-8")
         barcode_type = barcode.type
