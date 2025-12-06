@@ -12,6 +12,7 @@ from config import (
 )
 from texts import TEXTS, GOK_STATUS
 
+FOOD_BARCODES = ["EAN13", "EAN8", "UPC-A", "UPC-E"]
 
 def extract_barcode_from_image(image: Image) -> list:
     barcodes = decode(image)
@@ -25,8 +26,8 @@ def extract_barcode_from_image(image: Image) -> list:
 
 def check_barcode(media_url: str, text=False) -> str:
     """
-    get link to the pic (MediaUrl0 of Twilio / Meta image URL)
-    return the barcode data if found, else an error message
+    Check barcode from image URL or text input.
+    return response string.
     """
     if text:
         logger.info(f"Barcode (text) detected: {media_url}")
@@ -49,12 +50,12 @@ def check_barcode(media_url: str, text=False) -> str:
             return TEXTS["errors"]["barcode_not_found"]
 
         # only EAN** is supported
-        ean_barcodes = [barcode for barcode in barcodes if barcode.type.startswith("EAN")]
-        if not ean_barcodes:
+        food_barcodes = [barcode for barcode in barcodes if barcode in FOOD_BARCODES]
+        if not food_barcodes:
             logger.debug(f"Not EAN barcodes found: {barcodes}")
             return TEXTS["errors"]["unsupported_barcode"]
 
-        barcode = ean_barcodes[0]
+        barcode = food_barcodes[0]
         barcode_data = barcode.data.decode("utf-8")
         barcode_type = barcode.type
         logger.info(f"Barcode ({barcode_type}) detected: {barcode_data}")
