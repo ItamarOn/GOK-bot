@@ -1,5 +1,4 @@
 import socket
-import platform
 from config import ADMIN_CHAT_ID, ENVIRONMENT, logger
 from services.message import green_send_message
 
