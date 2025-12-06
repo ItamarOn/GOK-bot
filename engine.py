@@ -12,7 +12,7 @@ from config import (
 )
 from texts import TEXTS, GOK_STATUS
 
-FOOD_BARCODES = ["EAN13", "EAN8", "UPC-A", "UPC-E"]
+FOOD_BARCODES = {"EAN13", "EAN8", "UPC-A", "UPC-E"}
 
 def extract_barcode_from_image(image: Image) -> list:
     barcodes = decode(image)
@@ -50,7 +50,7 @@ def check_barcode(media_url: str, text=False) -> str:
             return TEXTS["errors"]["barcode_not_found"]
 
         # only EAN** is supported
-        food_barcodes = [barcode for barcode in barcodes if barcode in FOOD_BARCODES]
+        food_barcodes = [b for b in barcodes if b.type in FOOD_BARCODES]
         if not food_barcodes:
             logger.debug(f"Not EAN barcodes found: {barcodes}")
             return TEXTS["errors"]["unsupported_barcode"]
