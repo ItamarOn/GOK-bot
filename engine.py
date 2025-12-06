@@ -12,7 +12,7 @@ from config import (
 )
 from texts import TEXTS, GOK_STATUS
 
-FOOD_BARCODES = {"EAN13", "EAN8", "UPC-A", "UPC-E"}
+FOOD_BARCODES = {"EAN13", "EAN8"}  # UPC-A is normalized to GTIN-13 by adding a leading '0' (GS1 standard).
 
 def extract_barcode_from_image(image: Image) -> list:
     barcodes = decode(image)
@@ -55,9 +55,10 @@ def check_barcode(media_url: str, text=False) -> str:
             logger.debug(f"Not EAN barcodes found: {barcodes}")
             return TEXTS["errors"]["unsupported_barcode"]
 
-        logger.debug(f"{len(food_barcodes)} detected barcodes: {food_barcodes}")
-        logger.debug(f"{len(food_barcodes)} detected barcodes: {[bf.type for bf in food_barcodes]}")
-        barcode = food_barcodes[0]
+        if len(food_barcodes) > 1:
+            logger.info(f"{len(food_barcodes)} detected barcodes: {[bf.type for bf in food_barcodes]}")
+
+        barcode = food_barcodes[-1]
         barcode_data = barcode.data.decode("utf-8")
         barcode_type = barcode.type
         logger.info(f"Barcode ({barcode_type}) detected: {barcode_data}")
