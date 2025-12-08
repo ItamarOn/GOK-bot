@@ -1,7 +1,8 @@
-import random
-import time
-import requests
 import io
+import html
+import time
+import random
+import requests
 from PIL import Image, ImageEnhance
 from pyzbar.pyzbar import decode
 
@@ -118,7 +119,7 @@ def ask_gok(barcode_data: str, retry_seconds=0):
         logger.debug(f'retry after {retry_seconds} seconds') if retry_seconds else None
         logger.debug(f"product_info[0]:\n{product_info[0]}\n")
 
-        product_name = product_info[0].get('name', '') + '\n'
+        product_name = html.unescape(product_info[0].get('name', '')) + '\n'
         status = product_info[0]['status']
 
         if status != GOK_STATUS['confirmed']:
