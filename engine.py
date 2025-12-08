@@ -62,6 +62,7 @@ def check_barcode(media_url: str, text=False) -> str:
         barcode = food_barcodes[0]
         barcode_data = barcode.data.decode("utf-8")
         barcode_type = barcode.type
+        barcode_data = align_to_gok_format(barcode_data, barcode_type)
         logger.info(f"Barcode ({barcode_type}) detected: {barcode_data}")
 
         return (
@@ -140,3 +141,13 @@ def ask_gok(barcode_data: str, retry_seconds=0):
         logger.debug(f"response: {response.json()}")
         logger.exception("200 OK for asking GOK, But error for parsing")
         return TEXTS["errors"]["internal_logic_error"]
+
+
+def align_to_gok_format(barcode_data: str, barcode_type: str) -> str:
+    """
+    GTIN-13 format include EAN-13 and UPC-A. by add leading '0' to UPC-A.
+    to align with GOK system we must remove this leading '0' for EAN-13.
+    """
+    if barcode_type == "EAN13" and len(barcode_data) == 13 and barcode_data.startswith('0') :
+        return barcode_data[1:]  # Remove leading '0'
+    return barcode_data
