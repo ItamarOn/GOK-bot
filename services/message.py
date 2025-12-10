@@ -14,5 +14,10 @@ def green_send_message(chat_id: str, text: str, reply_to: str = None):
         payload["quotedMessageId"] = reply_to
 
     logger.debug(f"Green send payload: {payload}")
+
     response = requests.post(url, json=payload)
-    logger.info(f"Green send status: {response.status_code} | {response.text}")
+    if not response.ok:
+        logger.error(f"Bad response from Green - payload:{payload} - response:{response}")
+    log_msg_preview = text.split('\n', 1)[0]
+
+    logger.info(f"Green response status: {response.status_code} for: `{log_msg_preview}`")
