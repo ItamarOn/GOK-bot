@@ -18,6 +18,6 @@ def green_send_message(chat_id: str, text: str, reply_to: str = None):
     response = requests.post(url, json=payload)
     if not response.ok:
         logger.error(f"Bad response from Green - payload:{payload} - response:{response}")
-    log_msg_preview = text.split('\n', 1)[0]
 
+    log_msg_preview = text.split('\n', 1)[0]
     logger.info(f"Green response: {response.status_code} `{log_msg_preview}`")
