@@ -62,7 +62,7 @@ async def green_webhook(request: Request):
 
     # Group Chat logic:
     if "@g.us" in sender_data.get("chatId", ""):
-        return group_handler(sender_data, msg_data, msg_type, msg_id, timestamp, duplicate_checker)
+        return await group_handler(sender_data, msg_data, msg_type, msg_id, timestamp, duplicate_checker)
 
     # Personal Chat logic:
     return await personal_chat_handler(msg_data, msg_id, msg_type, sender, duplicate_checker)

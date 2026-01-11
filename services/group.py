@@ -6,13 +6,13 @@ from utils.time_check import is_night_hours
 from texts import TEXTS
 
 
-def group_handler(sender_data, msg_data, msg_type, msg_id, timestamp, duplicate_checker):
+async def group_handler(sender_data, msg_data, msg_type, msg_id, timestamp, duplicate_checker):
     actual_sender = sender_data.get("sender", "Unknown")
     group_name = sender_data.get("chatName", "Unknown Group")
     logger.info(f"Group {msg_type} from {group_name} sender: {actual_sender}")
 
     if is_night_hours(timestamp):
-        if not duplicate_checker.is_duplicate('sender', f'{group_name}:{actual_sender}', ttl_seconds=300):
+        if not await duplicate_checker.is_duplicate('sender', f'{group_name}:{actual_sender}', ttl_seconds=300):
             return night_response(sender_data, msg_id, actual_sender, group_name)
         return {"status": "group_outside_hours_many_messages"}
 
