@@ -29,9 +29,12 @@ WHITE_IP = os.getenv("WHITE_IP")
 GREEN_ID = os.getenv("GREEN_ID")
 GREEN_TOKEN = os.getenv("GREEN_TOKEN")
 ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")
-ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+ENVIRONMENT = os.getenv("ENVIRONMENT", "DEV")
 # for Redis connection (duplicate checker)
 REDIS_URL = os.getenv("REDIS_URL")
+
+#  Working hours, no env-vars, using defaults
+WORKING_HOURS = os.getenv("WORKING_HOURS", "7,22")  # 7 AM to 10 PM
 
 if not GREEN_ID or not GREEN_TOKEN or not GOK_API_TOKEN or not WHITE_IP:
     raise RuntimeError("Missing credentials — check .env or Render Environment settings.")

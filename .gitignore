@@ -2,5 +2,6 @@
 .venv/
 *.pyc
 .env
+ADMIN.md
 __pycache__/
 .idea/

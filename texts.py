@@ -23,7 +23,7 @@ TEXTS = {
         "barcode_not_found": "🙄 או שזו תמונה ללא ברקוד או שבתמונה יש רעש רב\n נסו לחתוך רק את הברקוד",
         "unsupported_barcode": "בתמונה מופיע ברקוד שאיננו נתמך, נא לשלוח תמונה בה יש ברקוד סטנדרטי בלבד.",
         "internal_logic_error": "שגיאת שרת, נסה שוב מאוחר יותר⏳ או פנה לתמיכה🛠️",
-        "out_of_working_hours":"כעת לילה בישראל 🤫😴✨\nהשתדלו לשלוח בשעות הפעילות",
+        "out_of_working_hours":"כעת לילה בישראל 🤫😴✨\nהקבוצה פעילה בין 7:00 ל22:00 בלבד",
 
         # GOK-related
         "gok_server_error": "שגיאת שרת בעת שאילתת GOK, נסה שוב מאוחר יותר⏳",
@@ -32,15 +32,20 @@ TEXTS = {
     "product_status": {
         "in_review": "לא קיים מידע במערכת GOK🤷",
         "not_kosher": "❌ לא כשר",
-        "kosher_template": "{kashrut_type} ✅{cert}",
+        "kosher_template": "{kashrut_type} ✅{cert}",  # we use the "✅" sign as identifier for group_handler
     },
     "barcode": {
         "prefix": "ברקוד: ",
     },
     "gok_strings": {
         "confirmed": 'מוצר מאושר ע"י הרב לשימוש במערכת',
-
-    }
+    },
+    "group": {
+        "unlisted": "המוצר לא קיים במאגר שלנו, נמתין לרב🙏\n"
+                    "וודאו ששלחתם רכיבים ברורים ותמונת חזית",
+        "listed": "📲 בידקו את את הברקוד באתר\n"
+                  "www.kosher.global/zekasher ",
+    },
 }
 
 GOK_STATUS = {

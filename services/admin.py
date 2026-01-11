@@ -1,13 +1,18 @@
 import socket
 from config import ADMIN_CHAT_ID, ENVIRONMENT, logger
-from services.message import green_send_message
-
+from services.message import green_send_message, is_green_available
+from datetime import datetime
 
 def update_admin_startup():
+    if is_green_available():
+        logger.info('Green API is available - sending startup message to admin.')
+    else:
+        logger.error('Green API is not available')
+    time_now = datetime.now().strftime("%H:%M %d/%m")
     try:
         green_send_message(
             ADMIN_CHAT_ID,
-            "Bot has been started.\n\n"
+            f"Bot has been started ({time_now}).\n\n"
             f"Environment: {ENVIRONMENT}\n"
             f"hostname: {socket.gethostname()}\n"
             # add bot version
