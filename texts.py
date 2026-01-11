@@ -44,7 +44,7 @@ TEXTS = {
         "unlisted": "המוצר לא קיים במאגר שלנו, נמתין לרב🙏\n"
                     "וודאו ששלחתם רכיבים ברורים ותמונת חזית",
         "listed": "המוצר קיים במאגר המוצרים באתר\n"
-                  "נא להקפיד לבדוק לפני השליחה בקבוצה"
+                  "נא להקפיד לבדוק לפני השליחה בקבוצה\n"
                   "www.kosher.global/zekasher 📲",
     },
 }
