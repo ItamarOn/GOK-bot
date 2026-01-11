@@ -22,8 +22,8 @@ async def lifespan(app: FastAPI):
         logger.info("Redis connection closed")
         update_admin_shutdown()
 
-
 app = FastAPI(lifespan=lifespan)
+
 # Health Checks
 @app.get("/health/redis", tags=["system"])
 async def redis_health():
@@ -35,7 +35,6 @@ async def redis_keys_count():
     count = await duplicate_checker.count_keys()
     return {"keys": count}
 
-
 @app.get("/health", tags=["system"])
 async def health_check(request: Request):
     client_ip = request.client.host or "unknown"
@@ -45,7 +44,6 @@ async def health_check(request: Request):
         "ip": f"{client_ip}",
         "time": f"{time()}",
     }
-
 
 @app.post("/webhook-green", tags=["whatsapp"])
 async def green_webhook(request: Request):

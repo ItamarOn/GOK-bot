@@ -12,7 +12,7 @@ def group_handler(sender_data, msg_data, msg_type, msg_id, timestamp, duplicate_
     logger.info(f"Group {msg_type} from {group_name} sender: {actual_sender}")
 
     if is_night_hours(timestamp):
-        if not duplicate_checker.is_duplicate('sender', actual_sender, ttl_seconds=300):
+        if not duplicate_checker.is_duplicate('sender', f'{group_name}:{actual_sender}', ttl_seconds=300):
             return night_response(sender_data, msg_id, actual_sender, group_name)
         return {"status": "group_outside_hours_many_messages"}
 
