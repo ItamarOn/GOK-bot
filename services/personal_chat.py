@@ -6,7 +6,7 @@ from texts import HELP_KEYWORDS, TEXTS, THANKS_KEYWORDS
 
 async def personal_chat_handler(msg_data, msg_id, msg_type, sender, duplicate_checker):
     # ignore duplicates
-    if await duplicate_checker.is_duplicate(msg_id):
+    if await duplicate_checker.is_duplicate('msg', msg_id, ttl_seconds=86400):
         logger.info(f"Duplicate message ignored: {msg_id} from {sender}")
         return {"status": "duplicate_ignored"}
 
