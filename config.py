@@ -1,5 +1,6 @@
 import os
 from dotenv import load_dotenv
+from zoneinfo import ZoneInfo
 import logging
 
 env_location = 'local .env'
@@ -14,8 +15,9 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger("gok-bot")
+tz_info = ZoneInfo("Asia/Jerusalem")
 
-logger.info(f"Loaded env vars from: {env_location}")
+logger.info(f"Loaded env vars from: {env_location}. Timezone set to {tz_info}")
 
 GOK_API_TOKEN = os.getenv("GOK_API_TOKEN")
 WHITE_IP = os.getenv("WHITE_IP")
