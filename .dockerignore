@@ -1,0 +1,21 @@
+# Ignore test files and caches so they don't get copied into the image
+tests/
+requirements-dev.txt
+__pycache__/
+*.pyc
+*.pyo
+.Python
+venv/
+.venv/
+.env
+.env.*
+.idea/
+.vscode/
+.git/
+.gitignore
+
+# Optional: ignore local editor/project files
+.DS_Store
+coverage/
+htmlcov/
+

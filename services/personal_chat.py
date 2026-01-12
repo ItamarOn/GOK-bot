@@ -1,7 +1,7 @@
 from config import logger
-from engine import check_barcode
-from services.message import green_send_message
-from texts import HELP_KEYWORDS, TEXTS, THANKS_KEYWORDS
+from core.engine import check_barcode
+from core.message import green_send_message
+from utils.texts import HELP_KEYWORDS, TEXTS, THANKS_KEYWORDS
 
 
 async def personal_chat_handler(msg_data, msg_id, msg_type, sender, duplicate_checker):

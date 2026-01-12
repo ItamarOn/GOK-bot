@@ -6,7 +6,7 @@ from config import logger
 from services.admin import update_admin_startup, update_admin_shutdown
 from services.group import group_handler
 from services.personal_chat import personal_chat_handler
-from ducplicate_checker import DuplicateChecker
+from utils.ducplicate_checker import DuplicateChecker
 
 duplicate_checker = DuplicateChecker()
 

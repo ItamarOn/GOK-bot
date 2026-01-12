@@ -1,9 +1,9 @@
 from config import logger
-from engine import check_barcode
+from core.engine import check_barcode
 
-from services.message import green_send_message
+from core.message import green_send_message
 from utils.time_check import is_night_hours
-from texts import TEXTS
+from utils.texts import TEXTS
 
 
 async def group_handler(sender_data, msg_data, msg_type, msg_id, timestamp, duplicate_checker):

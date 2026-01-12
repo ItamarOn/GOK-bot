@@ -11,7 +11,7 @@ from config import (
     GOK_API_TOKEN,
     WHITE_IP,
 )
-from texts import TEXTS, GOK_STATUS
+from utils.texts import TEXTS, GOK_STATUS
 
 FOOD_BARCODES = {"EAN13", "EAN8"}  # UPC-A is normalized to GTIN-13 by adding a leading '0' (GS1 standard).
 

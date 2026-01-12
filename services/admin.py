@@ -1,6 +1,6 @@
 import socket
 from config import ADMIN_CHAT_ID, ENVIRONMENT, logger, tz_info
-from services.message import green_send_message, is_green_available
+from core.message import green_send_message, is_green_available
 from datetime import datetime
 
 def update_admin_startup():
