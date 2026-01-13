@@ -28,6 +28,11 @@ async def group_handler(sender_data, msg_data, msg_type, msg_id, timestamp, dupl
             logger.info(f"Group image ignored (no barcode): {msg_id} from {actual_sender} in {group_name}")
             return {"status": "group_image_ignored"}
 
+        detected_barcode = "".join(c for c in result if c.isdigit())
+        if detected_barcode and await duplicate_checker.is_duplicate('barcode', detected_barcode, ttl_seconds=300):
+            logger.info(f"Duplicate barcode {detected_barcode} from {actual_sender} in {group_name}")
+            return {"status": "group_duplicate_barcode_ignored"}
+
         if TEXTS["errors"]["gok_not_found"] in result:
             logger.info(f"Group image barcode not found in GOK: {msg_id} from {actual_sender} in {group_name}")
             green_send_message(sender_data["chatId"], TEXTS['group']['unlisted'], reply_to=msg_id)

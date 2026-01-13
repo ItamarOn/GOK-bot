@@ -27,7 +27,7 @@ async def personal_chat_handler(msg_data, msg_id, msg_type, sender, duplicate_ch
             green_send_message(sender, TEXTS["welcome"])
             return {"status": "help_sent"}
 
-        digits = "".join(filter(str.isdigit, text))
+        digits = "".join(c for c in text if c.isdigit())
         if digits:
             result = check_barcode(digits, text=True)
             green_send_message(sender, result, reply_to=msg_id)
