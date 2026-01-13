@@ -60,19 +60,21 @@ async def redis_all_data(limit: int = 100, admin: str = Depends(verify_admin)):
     if not db.client:
         return {"error": "Redis client not connected"}
 
-    all_data = {}
-    count = 0
-    async for key in db.client.scan_iter():
-        if count >= limit:
+    personal_counters_data = {}
+    async for key in db.client.scan_iter(match="co*", count=100):
+        if len(personal_counters_data) >= limit:
             break
         value = await db.client.get(key)
-        all_data[key] = value
-        count += 1
+        personal_counters_data[key] = value
+
+    duplicate_prevention = await db.count_keys(match="dup*")
 
     return {
-        "count": len(all_data),
-        "limit_applied": limit,
-        "data": dict(sorted(all_data.items()))
+        "total_redis_keys": duplicate_prevention + len(personal_counters_data),
+        "count_duplicate_prevention": duplicate_prevention,
+        "count_personal_counters": len(personal_counters_data),
+        "limit_personal_counters": limit,
+        "data": dict(sorted(personal_counters_data.items()))
     }
 
 @app.post("/webhook-green", tags=["whatsapp"])
