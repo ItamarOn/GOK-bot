@@ -13,7 +13,7 @@ TEXTS = {
     "thanks" : (
         "🤖 אני בוט ואין צורך לומר לי תודה,\n"
         "🧙‍♂️ אם ברצונך להודות ליוצרי המיזם תוכל לתרום לארגון GOK בלינק:\n"
-        "kosher.global/support-zekasher 🙏"
+        "https://kosher.global/support-zekasher 🙏"
     ),
     "errors": {
         "image_processing": "בעיה בעיבוד התמונה🔄\n נסו לשנות זווית או לחתוך רק את הברקוד",
