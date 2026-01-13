@@ -1,24 +1,34 @@
 from time import time
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException, Depends, status
+from fastapi.security import APIKeyHeader
 
-from config import logger
+from config import logger, ADMIN_SECRET_TOKEN
 from services.admin import update_admin_startup, update_admin_shutdown
 from services.group import group_handler
 from services.personal_chat import personal_chat_handler
-from utils.ducplicate_checker import DuplicateChecker
+from utils.redis_manager import db
 
-duplicate_checker = DuplicateChecker()
+
+api_key_header = APIKeyHeader(name="X-Admin-Token")
+
+async def verify_admin(api_key: str = Depends(api_key_header)):
+    if api_key != ADMIN_SECRET_TOKEN:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Forbidden: Invalid Admin Token"
+        )
+    return api_key
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Handle startup and shutdown lifecycle for FastAPI"""
-    await duplicate_checker.connect()
+    await db.connect()
     logger.info("Redis connected successfully")
     update_admin_startup()
     yield
-    if duplicate_checker.client:
-        await duplicate_checker.client.close()
+    if db.client:
+        await db.client.close()
         logger.info("Redis connection closed")
         update_admin_shutdown()
 
@@ -27,13 +37,8 @@ app = FastAPI(lifespan=lifespan)
 # Health Checks
 @app.get("/health/redis", tags=["system"])
 async def redis_health():
-    healthy = await duplicate_checker.ping()
+    healthy = await db.ping()
     return {"redis": "ok" if healthy else "unreachable"}
-
-@app.get("/health/redis/count", tags=["system"])
-async def redis_keys_count():
-    count = await duplicate_checker.count_keys()
-    return {"keys": count}
 
 @app.get("/health", tags=["system"])
 async def health_check(request: Request):
@@ -43,6 +48,31 @@ async def health_check(request: Request):
         "status": "ok",
         "ip": f"{client_ip}",
         "time": f"{time()}",
+    }
+
+@app.get("/health/redis/count", tags=["system"])
+async def redis_keys_count(admin: str = Depends(verify_admin)):
+    count = await db.count_keys()
+    return {"total_keys": count}
+
+@app.get("/health/redis/all", tags=["system"])
+async def redis_all_data(limit: int = 100, admin: str = Depends(verify_admin)):
+    if not db.client:
+        return {"error": "Redis client not connected"}
+
+    all_data = {}
+    count = 0
+    async for key in db.client.scan_iter():
+        if count >= limit:
+            break
+        value = await db.client.get(key)
+        all_data[key] = value
+        count += 1
+
+    return {
+        "count": len(all_data),
+        "limit_applied": limit,
+        "data": dict(sorted(all_data.items()))
     }
 
 @app.post("/webhook-green", tags=["whatsapp"])
@@ -62,7 +92,7 @@ async def green_webhook(request: Request):
 
     # Group Chat logic:
     if "@g.us" in sender_data.get("chatId", ""):
-        return await group_handler(sender_data, msg_data, msg_type, msg_id, timestamp, duplicate_checker)
+        return await group_handler(sender_data, msg_data, msg_type, msg_id, timestamp)
 
     # Personal Chat logic:
-    return await personal_chat_handler(msg_data, msg_id, msg_type, sender, duplicate_checker)
+    return await personal_chat_handler(msg_data, msg_id, msg_type, sender)

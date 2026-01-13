@@ -32,8 +32,9 @@ GREEN_ID = os.getenv("GREEN_ID")
 GREEN_TOKEN = os.getenv("GREEN_TOKEN")
 ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")
 ENVIRONMENT = os.getenv("ENVIRONMENT", "DEV")
-# for Redis connection (duplicate checker)
+# for Redis connection
 REDIS_URL = os.getenv("REDIS_URL")
+ADMIN_SECRET_TOKEN = os.getenv("ADMIN_SECRET_TOKEN")
 
 #  Working hours, no env-vars, using defaults
 WORKING_HOURS = os.getenv("WORKING_HOURS", "7,22")  # 7 AM to 10 PM

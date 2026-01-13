@@ -2,13 +2,16 @@ from config import logger
 from core.engine import check_barcode
 from core.message import green_send_message
 from utils.texts import HELP_KEYWORDS, TEXTS, THANKS_KEYWORDS
+from utils.redis_manager import db
 
-
-async def personal_chat_handler(msg_data, msg_id, msg_type, sender, duplicate_checker):
+async def personal_chat_handler(msg_data, msg_id, msg_type, sender):
     # ignore duplicates
-    if await duplicate_checker.is_duplicate('msg', msg_id, ttl_seconds=86400):
+    if await db.is_duplicate('msg', msg_id, ttl_seconds=86400):
         logger.info(f"Duplicate message ignored: {msg_id} from {sender}")
         return {"status": "duplicate_ignored"}
+
+    sender_digits = "".join(c for c in sender if c.isdigit())
+    await db.increment_counter(sender_digits)
 
     # pic
     if msg_type == "imageMessage":

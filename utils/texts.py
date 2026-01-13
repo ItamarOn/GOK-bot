@@ -13,7 +13,7 @@ TEXTS = {
     "thanks" : (
         "🤖 אני בוט ואין צורך לומר לי תודה,\n"
         "🧙‍♂️ אם ברצונך להודות ליוצרי המיזם תוכל לתרום לארגון GOK בלינק:\n"
-        "https://kosher.global/support-zekasher 🙏"
+        "kosher.global/support-zekasher 🙏"
     ),
     "errors": {
         "image_processing": "בעיה בעיבוד התמונה🔄\n נסו לשנות זווית או לחתוך רק את הברקוד",
@@ -46,7 +46,7 @@ TEXTS = {
                     "במידה והרכיבים אינם בשפה מערבית שלחו תמונה מתורגמת לאנגלית",
         "listed": "המוצר קיים במאגר המוצרים באתר\n"
                   "נא להקפיד לבדוק לפני השליחה בקבוצה\n"
-                  "www.kosher.global/zekasher 📲",
+                  "kosher.global/zekasher 📲",
     },
 }
 
