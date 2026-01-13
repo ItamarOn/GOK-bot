@@ -58,15 +58,17 @@ class RedisManager:
             logger.error(f"Redis health check failed: {e}")
             return False
 
-    async def count_keys(self) -> int:
-        """
-        Returns the number of keys in the current Redis DB.
-        Note: expired keys are removed lazily; count is approximate in edge cases.
-        """
+    async def count_keys(self, match: str = '*') -> int:
+        """ Returns the number of keys in the current Redis DB """
         await self._ensure_connection()
-        msgs_on_last_24h = await self.client.dbsize()
-        logger.info(f"Number of keys in Redis: {msgs_on_last_24h}")
-        return msgs_on_last_24h
+        if match == '*':
+            count = await self.client.dbsize()
+        else:
+            count = 0
+            async for _ in self.client.scan_iter(match=match):
+                count += 1
+        logger.info(f"Number of {match} keys in Redis: {count}")
+        return count
 
 
 db = RedisManager()  # Singleton instance
