@@ -1,4 +1,4 @@
-from config import logger
+from config import logger, MATES
 from core.engine import check_barcode
 
 from core.message import green_send_message
@@ -10,6 +10,9 @@ async def group_handler(sender_data, msg_data, msg_type, msg_id, timestamp):
     actual_sender = sender_data.get("sender", "Unknown")
     group_name = sender_data.get("chatName", "Unknown Group")
     logger.info(f"Group {msg_type} from {group_name} sender: {actual_sender}")
+
+    if actual_sender.split('@')[0] in MATES:
+        return {"status": "group_mate_ignored"}
 
     if is_night_hours(timestamp):
         if not await db.is_duplicate('sender', f'{group_name}:{actual_sender}', ttl_seconds=300):

@@ -38,6 +38,7 @@ ADMIN_SECRET_TOKEN = os.getenv("ADMIN_SECRET_TOKEN")
 
 #  Working hours, no env-vars, using defaults
 WORKING_HOURS = os.getenv("WORKING_HOURS", "7,22")  # 7 AM to 10 PM
+MATES = set(phone.strip() for phone in os.getenv('MATES', '').split(','))
 
 if not GREEN_ID or not GREEN_TOKEN or not GOK_API_TOKEN or not WHITE_IP:
     raise RuntimeError("Missing credentials — check .env or Render Environment settings.")
