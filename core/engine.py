@@ -162,7 +162,7 @@ def leading_zero_retry(barcode_data: str) -> str:
         time.sleep(6)
         result = ask_gok(modified_barcode, 1)
         if TEXTS["product_status"]["not_kosher"] in result or '✅' in result:
-            return result
+            return TEXTS['barcode']['edited'] + result
         results[modified_barcode] = result
     logger.info(f'No results after leading zero retries: {results}')
     printed_results = "\n".join(results.keys())

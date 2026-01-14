@@ -36,6 +36,7 @@ TEXTS = {
     },
     "barcode": {
         "prefix": "ברקוד: ",
+        "edited": "ברקוד שנמצא: ",
     },
     "gok_strings": {
         "confirmed": 'מוצר מאושר ע"י הרב לשימוש במערכת',
