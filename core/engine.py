@@ -106,9 +106,9 @@ def ask_gok(barcode_data: str, retry_seconds=0):
             return TEXTS["errors"]["gok_server_error"]
 
     if not product_info:
+        logger.debug(f"{barcode_data} Doesn't exist in GOK system")
         if barcode_data.startswith('0') and retry_seconds == 0:
             return leading_zero_retry(barcode_data)
-        logger.debug("Doesn't exist in GOK system")
         return TEXTS["errors"]["gok_not_found"]
 
     try:
@@ -120,6 +120,8 @@ def ask_gok(barcode_data: str, retry_seconds=0):
 
         if status != GOK_STATUS['confirmed'] or not product_info[0].get('kashrutTypes'):
             logger.debug(f"Product status: {status}")
+            if barcode_data.startswith('0') and retry_seconds == 0:
+                return leading_zero_retry(barcode_data)
             return product_name + TEXTS["product_status"]["in_review"]
 
         kashrut_type = product_info[0]['kashrutTypes'][0]
