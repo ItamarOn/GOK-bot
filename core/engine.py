@@ -112,6 +112,9 @@ def ask_gok(barcode_data: str, retry_seconds=0):
             return TEXTS["errors"]["gok_server_error"]
 
     if not product_info:
+        if barcode_data.startswith('0') and retry_seconds == 0:
+            # backward compatibility. examples: 0000080042563, (0)074880020021
+            return ask_gok(barcode_data.lstrip('0'), 1)
         logger.debug("Doesn't exist in GOK system")
         return TEXTS["errors"]["gok_not_found"]
 
@@ -122,7 +125,7 @@ def ask_gok(barcode_data: str, retry_seconds=0):
         product_name = html.unescape(product_info[0].get('name', '')) + '\n'
         status = product_info[0]['status']
 
-        if status != GOK_STATUS['confirmed']:
+        if status != GOK_STATUS['confirmed'] or not product_info[0].get('kashrutTypes'):
             logger.debug(f"Product status: {status}")
             return product_name + TEXTS["product_status"]["in_review"]
 
