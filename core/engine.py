@@ -33,8 +33,7 @@ def check_barcode(media_url: str, text=False) -> str:
     if text:
         logger.info(f"Barcode (text) detected: {media_url}")
         return (
-            TEXTS["barcode"]["prefix"]
-            + f"{media_url}\n"
+            TEXTS["barcode"]["prefix"] + f"{media_url}\n"
             + ask_gok(media_url)
         )
 
@@ -63,12 +62,10 @@ def check_barcode(media_url: str, text=False) -> str:
         barcode = food_barcodes[0]
         barcode_data = barcode.data.decode("utf-8")
         barcode_type = barcode.type
-        barcode_data = align_to_gok_format(barcode_data, barcode_type)
         logger.info(f"Barcode ({barcode_type}) detected: {barcode_data}")
 
         return (
-            TEXTS["barcode"]["prefix"]
-            + f"{barcode_data}\n"
+            TEXTS["barcode"]["prefix"] + f"{barcode_data}\n"
             + ask_gok(barcode_data)
         )
 
@@ -102,10 +99,7 @@ def ask_gok(barcode_data: str, retry_seconds=0):
         product_info = response.json()
     except Exception as e:
         if retry_seconds == 0:
-            sleep_time = random.randint(9, 25)
-            logger.debug(f"retrying after {sleep_time} seconds. due to exception: {e}")
-            time.sleep(sleep_time)
-            return ask_gok(barcode_data, retry_seconds=sleep_time)
+            return smart_retry(barcode_data, e)
         else:
             logger.debug(f"request: {url} payload: {payload}")
             logger.exception("Cannot get basic response from GOK")
@@ -113,9 +107,7 @@ def ask_gok(barcode_data: str, retry_seconds=0):
 
     if not product_info:
         if barcode_data.startswith('0') and retry_seconds == 0:
-            # backward compatibility. examples: 0000080042563, (0)074880020021
-            time.sleep(6) # To Avoid: 429 Client Error: Too Many Requests
-            return ask_gok(barcode_data.lstrip('0'), 1)
+            return leading_zero_retry(barcode_data)
         logger.debug("Doesn't exist in GOK system")
         return TEXTS["errors"]["gok_not_found"]
 
@@ -148,11 +140,30 @@ def ask_gok(barcode_data: str, retry_seconds=0):
         return TEXTS["errors"]["internal_logic_error"]
 
 
-def align_to_gok_format(barcode_data: str, barcode_type: str) -> str:
+def smart_retry(barcode_data, e):
+    sleep_time = random.randint(9, 25)
+    logger.debug(f"retrying after {sleep_time} seconds. due to exception: {e}")
+    time.sleep(sleep_time)
+    return ask_gok(barcode_data, retry_seconds=sleep_time)
+
+
+def leading_zero_retry(barcode_data: str) -> str:
     """
+    Retry GOK query by removing leading zeros (up to 3)
     GTIN-13 format include EAN-13 and UPC-A. by add leading '0' to UPC-A.
     to align with GOK system we must remove this leading '0' for EAN-13.
     """
-    if barcode_type == "EAN13" and len(barcode_data) == 13 and barcode_data.startswith('0') :
-        return barcode_data[1:]  # Remove leading '0'
-    return barcode_data
+    results = {}
+    for i in range(1, 4):
+        if len(barcode_data) < i or barcode_data[i-1] != '0':
+            break
+        modified_barcode = barcode_data[i:]
+        logger.debug(f"try barcode without {i} leading zeros: {modified_barcode}")
+        time.sleep(6)
+        result = ask_gok(modified_barcode, 1)
+        if TEXTS["product_status"]["not_kosher"] in result or '✅' in result:
+            return result
+        results[modified_barcode] = result
+    logger.info(f'No results after leading zero retries: {results}')
+    printed_results = "\n".join(results.keys())
+    return f'{printed_results}\n' + TEXTS["errors"]["gok_not_found"]
