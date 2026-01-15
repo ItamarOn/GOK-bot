@@ -39,7 +39,8 @@ async def group_handler(sender_data, msg_data, msg_type, msg_id, timestamp):
 
         if TEXTS["errors"]["gok_not_found"] in result:
             logger.info(f"Group image barcode not found in GOK: {msg_id} from {actual_sender} in {group_name}")
-            unlisted_msg = detected_barcode + '\n' + TEXTS['group']['unlisted']
+            barcode_or_barcodes_list = "".join(c for c in result if c.isdigit() or c == '\n')
+            unlisted_msg = barcode_or_barcodes_list + TEXTS['group']['unlisted']
             green_send_message(sender_data["chatId"], unlisted_msg, reply_to=msg_id)
             return {"status": "group_unlisted"}
 

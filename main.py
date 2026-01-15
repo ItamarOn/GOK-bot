@@ -85,6 +85,11 @@ async def green_webhook(request: Request):
     if data.get("typeWebhook") != "incomingMessageReceived":
         return {"status": "ignored"}
 
+    if db.is_duplicate('msg_id', data["idMessage"], ttl_seconds=300):
+        logger.info(f"Green sent this message again, probably the previous got timeout. sender:"
+                    f"{data['senderData'].get('sender', 'unknown')}")
+        return {"status": "duplicate_ignored"}
+
     sender_data = data["senderData"]
     sender = sender_data["sender"]
     msg_data = data["messageData"]
