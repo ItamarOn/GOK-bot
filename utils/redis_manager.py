@@ -42,6 +42,17 @@ class RedisManager:
             return True
         return False
 
+    async def is_n_duplicate(self, identifier: str, ttl_seconds: int = 300, n: int = 3) -> bool:
+        """Checks if an identifier has been seen more than n times within TTL."""
+        await self._ensure_connection()
+        key = f"dup-n:{identifier}"
+        new_value = await self.client.incr(key)
+        if new_value == 1:
+            await self.client.expire(key, ttl_seconds)
+        if new_value > n:
+            return True
+        return False
+
     async def increment_counter(self, name: str, amount: int = 1) -> int:
         """ Increments a named counter by the specified amount """
         await self._ensure_connection()
