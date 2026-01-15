@@ -27,4 +27,3 @@ income_jpg_msg_in_group = \
         }
     }
 }
-

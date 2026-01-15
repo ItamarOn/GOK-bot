@@ -11,4 +11,4 @@ COPY . .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # running the application
-CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "main:app"]
+CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "main:app", "--timeout", "60"]
