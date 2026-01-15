@@ -301,10 +301,8 @@ class TestCheckBarcodeWithLeadingZeros:
 
         # 1st call (0007290000000) - empty (not found)
         # 2nd call (007290000000) - empty (not found)
-        # 3rd call (07290000000) - empty (not found)
-        # 4th call (7290000000) - found!
+        # 3rd call (07290000000) - found!
         mock_post.side_effect = [
-            create_post_response([]),
             create_post_response([]),
             create_post_response([]),
             create_post_response([{
@@ -317,11 +315,11 @@ class TestCheckBarcodeWithLeadingZeros:
 
         result = check_barcode('https://example.com/barcode.jpg')
 
-        # Verify ask_gok was called 4 times (original + 3 retries)
-        assert mock_post.call_count == 4
+        # Verify ask_gok was called 3 times (original + 2 retries)
+        assert mock_post.call_count == 3
 
-        # Verify sleep was called 3 times (between retries)
-        assert mock_sleep.call_count == 3
+        # Verify sleep was called 2 times (between retries)
+        assert mock_sleep.call_count == 2
 
         # Verify successful result
         assert 'Test Product' in result
@@ -363,8 +361,8 @@ class TestCheckBarcodeWithLeadingZeros:
 
         result = check_barcode('https://example.com/barcode.jpg')
 
-        # Should try: 000123456, 00123456, 0123456, 123456 = 4 calls
-        assert mock_post.call_count == 4
+        # Should try: 000123456, 00123456, 0123456 = 3 calls
+        assert mock_post.call_count == 3
         assert TEXTS["errors"]["gok_not_found"] in result
         # Should list all attempted barcodes
         assert '00123456' in result

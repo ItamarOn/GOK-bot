@@ -156,7 +156,7 @@ def leading_zero_retry(barcode_data: str) -> str:
     to align with GOK system we must remove this leading '0' for EAN-13.
     """
     results = {}
-    for i in range(1, 4):
+    for i in range(1, 3):
         if len(barcode_data) < i or barcode_data[i-1] != '0':
             break
         modified_barcode = barcode_data[i:]

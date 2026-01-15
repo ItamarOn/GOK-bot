@@ -8,7 +8,7 @@ from core.engine import leading_zero_retry, ask_gok, check_barcode
 @pytest.mark.parametrize("barcode_data, expected", [
     ('007', 2),
     ('0074880020021', 2),
-    ('000080042563', 3),
+    ('000080042563', 2),
     ('0123456789012', 1),
 ])
 @patch('time.sleep', return_value=None)
@@ -20,8 +20,8 @@ def test_leading_zero_retry(mock_ask_gok, sleep_mock, barcode_data, expected):
 
 
 @pytest.mark.parametrize("barcode_data, expected", [
-    ('0003', 4),
-    ('00000006756', 4),
+    ('0003', 3),
+    ('00000006756', 3),
     ('0123456789012', 2),
     ('123456789012', 1),
 ])
