@@ -13,7 +13,7 @@ def update_admin_startup():
         ADMIN_CHAT_ID,
         f"Bot has been started ({time_now}).\n\n"
         f"Environment: {ENVIRONMENT}\n"
-        f"version: {RENDER_GIT_COMMIT}\n"
+        f"Version: {RENDER_GIT_COMMIT[:7]}\n"
         f"hostname: {socket.gethostname()}\n"
     )
     try:
