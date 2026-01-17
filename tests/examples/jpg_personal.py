@@ -1,4 +1,4 @@
-jpg_pesonal = \
+jpg_personal = \
 {
     'typeWebhook': 'incomingMessageReceived',
     'instanceData': {

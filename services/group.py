@@ -6,7 +6,12 @@ from utils.time_check import is_night_hours
 from utils.texts import TEXTS
 from utils.redis_manager import db
 
-async def group_handler(sender_data, msg_data, msg_type, msg_id, timestamp):
+async def group_handler(whatsapp_request: dict):
+    sender_data = whatsapp_request["senderData"]
+    msg_data = whatsapp_request["messageData"]
+    msg_type = msg_data["typeMessage"]
+    msg_id = whatsapp_request["idMessage"]
+    timestamp = whatsapp_request["timestamp"]
     actual_sender = sender_data.get("sender", "Unknown")
     group_name = sender_data.get("chatName", "Unknown Group")
     logger.info(f"Group {msg_type} from {group_name} sender: {actual_sender}")

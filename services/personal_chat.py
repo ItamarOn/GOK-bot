@@ -4,7 +4,13 @@ from core.message import green_send_message
 from utils.texts import HELP_KEYWORDS, TEXTS, THANKS_KEYWORDS
 from utils.redis_manager import db
 
-async def personal_chat_handler(msg_data, msg_id, msg_type, sender):
+async def personal_chat_handler(whatsapp_request: dict):
+    sender_data = whatsapp_request["senderData"]
+    sender = sender_data["sender"]
+    msg_data = whatsapp_request["messageData"]
+    msg_type = msg_data["typeMessage"]
+    msg_id = whatsapp_request["idMessage"]
+
     # ignore duplicates
     if await db.is_duplicate('msg', msg_id, ttl_seconds=86400):
         logger.info(f"Duplicate message ignored: {msg_id} from {sender}")

@@ -3,9 +3,13 @@
 # image with no barcode
 from unittest.mock import patch
 import pytest
+import fakeredis
+
 from services.personal_chat import personal_chat_handler
 from utils.redis_manager import RedisManager
-import fakeredis
+
+from examples import personal_pic_example
+
 
 @pytest.fixture(autouse=True)
 def mock_redis_manager():
@@ -22,11 +26,5 @@ async def test_personal_chat_handler_no_barcode(
         mock_green_send_message,
         mock_redis_manager
 ):
-    msg_data = {
-        "fileMessageData": {
-            "downloadUrl": "http://some_url.jpg"
-        }
-    }
-
-    result = await personal_chat_handler(msg_data, "ABC123", "imageMessage", "054222222@c.us")
+    result = await personal_chat_handler(personal_pic_example)
     assert result["status"] == "image_processed"

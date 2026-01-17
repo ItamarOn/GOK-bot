@@ -8,6 +8,8 @@ from services.group import group_handler
 from utils.texts import TEXTS
 from utils.redis_manager import RedisManager
 
+from examples import group_pic_example, group_text_example
+
 # make fixture for all tests in this file
 @pytest.fixture(autouse=True)
 def mock_redis_manager():
@@ -24,33 +26,25 @@ async def test_group_handler_night_duplicate(
         mock_is_night_hours,
         mock_redis_manager
 ):
-    sender_data = {
-        "chatId": "123123123",
-        "chatName": "Group Of Test 2 👳🏻‍♂️",
-        "sender": "972547777777@c.us"
-    }
-    msg_data = {
-        "fileMessageData": {
-            "downloadUrl": "http://example.com/image_with_no_barcode.jpg"
-        }
-    }
-    msg_type = "imageMessage"
-    msg_id = "ACF1C883BE25C3AEE97E812C1234567B"
-    timestamp = 1234567890
+    whatsapp_request = group_pic_example.copy()
+    whatsapp_request_later = group_pic_example.copy()
+    whatsapp_request['timestamp'] = 1000000000
+    whatsapp_request_later['timestamp'] = 1000000001
 
     # result = await group_handler(sender_data, msg_data, msg_type, msg_id, timestamp, mock_redis_manager)
-    result = await group_handler(sender_data, msg_data, msg_type, msg_id, timestamp)
+    result = await group_handler(whatsapp_request)
     assert result['status'] == 'group_outside_hours'
-    result2 = await group_handler(sender_data, msg_data, msg_type, msg_id, timestamp + 1)
+    result2 = await group_handler(whatsapp_request_later)
     assert result2['status'] == 'group_outside_hours_many_messages'
-    result3 = await group_handler(sender_data, msg_data, msg_type, msg_id, timestamp + 1)
+    result3 = await group_handler(whatsapp_request_later)
     assert result3['status'] == 'group_outside_hours_many_messages'
 
     assert mock_is_night_hours.call_count == 3
 
     redis_values = await mock_redis_manager.execute_command('KEYS', '*')
-    assert redis_values == [b'dup:sender:Group Of Test 2 '
-                            b'\xf0\x9f\x91\xb3\xf0\x9f\x8f\xbb\xe2\x80\x8d\xe2\x99\x82\xef\xb8\x8f:972547777777@c.us']
+    assert redis_values == [
+        f"dup:sender:{whatsapp_request['senderData']['chatName']}:{whatsapp_request['senderData']['sender']}".encode(
+            "utf-8")]
 
 
 # image with no barcode
@@ -64,21 +58,7 @@ async def test_group_handler_no_barcode(
         mock_is_night_hours,
         mock_redis_manager
 ):
-    sender_data = {
-        "chatId": "group123",
-        "chatName": "Test Group",
-        "sender": "user123"
-    }
-    msg_data = {
-        "fileMessageData": {
-            "downloadUrl": "http://example.com/image_with_no_barcode.jpg"
-        }
-    }
-    msg_type = "imageMessage"
-    msg_id = "msg001"
-    timestamp = 1234567890
-
-    result = await group_handler(sender_data, msg_data, msg_type, msg_id, timestamp)
+    result = await group_handler(group_pic_example)
     assert result["status"] == "group_image_ignored"
 
 
@@ -94,23 +74,9 @@ async def test_group_handler_barcode_not_found(
         mock_is_night_hours,
         mock_redis_manager
 ):
-    sender_data = {
-        "chatId": "123123123",
-        "chatName": "Group Of Test 2",
-        "sender": "972547777777@c.us"
-    }
-    msg_data = {
-        "fileMessageData": {
-            "downloadUrl": "http://example.com/image_with_barcode_not_found.jpg"
-        }
-    }
-    msg_type = "imageMessage"
-    msg_id = "ACF1C883BE25C3AEE97E812C1234567B"
-    timestamp = 1234567890
-
-    result = await group_handler(sender_data, msg_data, msg_type, msg_id, timestamp)
+    result = await group_handler(group_pic_example)
     assert result['status'] == 'group_unlisted'
-    result2 = await group_handler(sender_data, msg_data, msg_type, msg_id, timestamp)
+    result2 = await group_handler(group_pic_example)
     assert result2['status'] == 'group_duplicate_barcode_ignored'
 
     redis_values = await mock_redis_manager.execute_command('KEYS', '*')
@@ -133,20 +99,7 @@ async def test_group_handler_kosher_barcode(
         mock_is_night_hours,
         mock_redis_manager,
 ):
-    sender_data = {
-        "chatId": "123123123",
-        "chatName": "Group Of Test 2",
-        "sender": "972547777777@c.us"
-    }
-    msg_data = {
-        "fileMessageData": {
-            "downloadUrl": "http://example.com/image_with_kosher_barcode.jpg"
-        }
-    }
-    msg_type = "imageMessage"
-    msg_id = "ACF1C883BE25C3AEE97E812C1234567B"
-    timestamp = 1234567890
-    result = await group_handler(sender_data, msg_data, msg_type, msg_id, timestamp)
+    result = await group_handler(group_pic_example)
     assert result['status'] == 'group_listed'
-    result2 = await group_handler(sender_data, msg_data, msg_type, msg_id, timestamp)
+    result2 = await group_handler(group_pic_example)
     assert result2['status'] == 'group_duplicate_barcode_ignored'

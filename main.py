@@ -79,27 +79,20 @@ async def redis_all_data(limit: int = 100, admin: str = Depends(verify_admin)):
 
 @app.post("/webhook-green", tags=["whatsapp"])
 async def green_webhook(request: Request):
-    data = await request.json()
-    logger.debug(f"Green incoming: {data}")
+    whatsapp_request = await request.json()
+    logger.debug(f"Green incoming: {whatsapp_request}")
 
-    if data.get("typeWebhook") != "incomingMessageReceived":
+    if whatsapp_request.get("typeWebhook") != "incomingMessageReceived":
         return {"status": "ignored"}
 
-    if await db.is_n_duplicate(data["idMessage"]):
+    if await db.is_n_duplicate(whatsapp_request["idMessage"]):
         logger.info(f"Green sent this message again, probably the previous got timeout. sender:"
-                    f"{data['senderData'].get('sender', 'unknown')}")
+                    f"{whatsapp_request['senderData'].get('sender', 'unknown')}")
         return {"status": "duplicate_ignored"}
 
-    sender_data = data["senderData"]
-    sender = sender_data["sender"]
-    msg_data = data["messageData"]
-    msg_type = msg_data["typeMessage"]
-    msg_id = data["idMessage"]
-    timestamp = data["timestamp"]
-
     # Group Chat logic:
-    if "@g.us" in sender_data.get("chatId", ""):
-        return await group_handler(sender_data, msg_data, msg_type, msg_id, timestamp)
+    if "@g.us" in whatsapp_request["senderData"].get("chatId", ""):
+        return await group_handler(whatsapp_request)
 
     # Personal Chat logic:
-    return await personal_chat_handler(msg_data, msg_id, msg_type, sender)
+    return await personal_chat_handler(whatsapp_request)
