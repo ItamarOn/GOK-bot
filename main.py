@@ -56,25 +56,29 @@ async def redis_keys_count(admin: str = Depends(verify_admin)):
     return {"total_keys": count}
 
 @app.get("/health/redis/all", tags=["system"])
-async def redis_all_data(limit: int = 100, admin: str = Depends(verify_admin)):
+async def redis_all_data(limit: int = 100, prefix: str = 'co', admin: str = Depends(verify_admin)):
     if not db.client:
         return {"error": "Redis client not connected"}
 
-    personal_counters_data = {}
-    async for key in db.client.scan_iter(match="co*", count=100):
-        if len(personal_counters_data) >= limit:
+    if not prefix or '*' in prefix:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid prefix provided"
+        )
+
+    prefix_match = f"{prefix}*"
+    match_keys = {}
+    async for key in db.client.scan_iter(match=prefix_match, count=100):
+        if len(match_keys) >= limit:
             break
         value = await db.client.get(key)
-        personal_counters_data[key] = value
-
-    duplicate_prevention = await db.count_keys(match="dup*")
+        match_keys[key] = value
 
     return {
-        "total_redis_keys": duplicate_prevention + len(personal_counters_data),
-        "count_duplicate_prevention": duplicate_prevention,
-        "count_personal_counters": len(personal_counters_data),
-        "limit_personal_counters": limit,
-        "data": dict(sorted(personal_counters_data.items()))
+        "prefix": prefix,
+        "limit": limit,
+        "count": len(match_keys),
+        "data": dict(sorted(match_keys.items()))
     }
 
 @app.post("/webhook-green", tags=["whatsapp"])
