@@ -1,6 +1,6 @@
 from time import time
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request, HTTPException, Depends, status
+from fastapi import FastAPI, Request, BackgroundTasks, HTTPException, Depends, status
 from fastapi.security import APIKeyHeader
 
 from config import logger, ADMIN_SECRET_TOKEN
@@ -82,21 +82,18 @@ async def redis_all_data(limit: int = 100, prefix: str = 'co', admin: str = Depe
     }
 
 @app.post("/webhook-green", tags=["whatsapp"])
-async def green_webhook(request: Request):
+async def green_webhook(request: Request, background_tasks: BackgroundTasks):
     whatsapp_request = await request.json()
     logger.debug(f"Green incoming: {whatsapp_request}")
 
     if whatsapp_request.get("typeWebhook") != "incomingMessageReceived":
         return {"status": "ignored"}
 
-    if await db.is_n_duplicate(whatsapp_request["idMessage"]):
-        logger.info(f"Green sent this message again, probably the previous got timeout. sender:"
-                    f"{whatsapp_request['senderData'].get('sender', 'unknown')}")
-        return {"status": "duplicate_ignored"}
-
     # Group Chat logic:
     if "@g.us" in whatsapp_request["senderData"].get("chatId", ""):
-        return await group_handler(whatsapp_request)
+        background_tasks.add_task(group_handler, whatsapp_request)
+        return {'status': 'group_acknowledged'}
 
     # Personal Chat logic:
-    return await personal_chat_handler(whatsapp_request)
+    background_tasks.add_task(personal_chat_handler, whatsapp_request)
+    return {"status": "personal_acknowledged"}

@@ -12,7 +12,7 @@ async def personal_chat_handler(whatsapp_request: dict):
     msg_id = whatsapp_request["idMessage"]
 
     # ignore duplicates
-    if await db.is_duplicate('msg', msg_id, ttl_seconds=86400):
+    if await db.is_duplicate('msg-p', msg_id, ttl_seconds=86400):
         logger.info(f"Duplicate message ignored: {msg_id} from {sender}")
         return {"status": "duplicate_ignored"}
 

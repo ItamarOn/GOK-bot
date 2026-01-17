@@ -42,7 +42,7 @@ class RedisManager:
             return True
         return False
 
-    async def is_n_duplicate(self, identifier: str, ttl_seconds: int = 300, n: int = 3) -> bool:
+    async def is_n_duplicate(self, identifier: str, ttl_seconds: int = 86400, n: int = 3) -> bool:
         """Checks if an identifier has been seen more than n times within TTL."""
         await self._ensure_connection()
         key = f"dup-n:{identifier}"

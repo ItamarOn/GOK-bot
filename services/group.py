@@ -2,7 +2,7 @@ from config import logger, MATES, ADMIN_CHAT_ID
 from core.engine import check_barcode
 
 from core.message import green_send_message
-from utils.time_check import is_night_hours
+from utils.time_check import is_night_hours, is_too_old
 from utils.texts import TEXTS
 from utils.redis_manager import db
 
@@ -15,6 +15,14 @@ async def group_handler(whatsapp_request: dict):
     actual_sender = sender_data.get("sender", "Unknown")
     group_name = sender_data.get("chatName", "Unknown Group")
     logger.info(f"Group {msg_type} from {group_name} sender: {actual_sender}")
+
+    if is_too_old(timestamp, max_age_hours=12):
+        logger.info(f"Old group message ignored: {msg_id} from {actual_sender} in {group_name}")
+        return {"status": "group_message_too_old"}
+
+    if await db.is_duplicate('msg-g', msg_id, ttl_seconds=86400):
+        logger.info(f"Duplicate message ignored: {msg_id} from {actual_sender} in {group_name}")
+        return {"status": "duplicate_ignored"}
 
     if actual_sender.split('@')[0] in MATES:
         return {"status": "group_mate_ignored"}
