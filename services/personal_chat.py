@@ -18,7 +18,7 @@ async def personal_chat_handler(whatsapp_request: dict):
         return {"status": "duplicate_ignored"}
 
     sender_digits = "".join(c for c in sender if c.isdigit())
-    number_of_requests = db.increment_counter(sender_digits)
+    number_of_requests = await db.increment_counter(sender_digits)
     if number_of_requests == 1:
         report_new_user_startup(whatsapp_request)
         green_send_message(sender, TEXTS["welcome"])
