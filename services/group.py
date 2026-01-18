@@ -15,7 +15,7 @@ async def group_handler(whatsapp_request: dict):
     actual_sender = sender_data.get("sender", "Unknown")
     group_name = sender_data.get("chatName", "Unknown Group")
     chat_id = sender_data.get("chatId", "Unknown ChatID")
-    logger.info(f"{msg_type} in {group_name} by: {actual_sender}")
+    logger.debug(f"{msg_type} in {group_name} by: {actual_sender}")
 
     if is_too_old(timestamp, max_age_hours=12):
         logger.info(f"Old group message ignored: {msg_id} from {actual_sender} in {group_name}")

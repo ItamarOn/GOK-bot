@@ -1,5 +1,5 @@
 from config import REPORTS_CHAT_ID, tz_info, RENDER_GIT_COMMIT
-from core.message import green_send_message, is_green_available
+from core.message import green_send_message
 from datetime import datetime
 
 def report_new_user_startup(whatsapp_request):
@@ -17,5 +17,5 @@ def report_new_user_startup(whatsapp_request):
 def report_service_version():
     green_send_message(
         REPORTS_CHAT_ID,
-        f"app version: {RENDER_GIT_COMMIT[:7]}"
+        f"Bot is alive. Version: {RENDER_GIT_COMMIT[:7]}"
     )
