@@ -98,7 +98,7 @@ async def redis_all_data(limit: int = 100, prefix: str = 'co', admin: str = Depe
 @app.post("/webhook-green", tags=["whatsapp"])
 async def green_webhook(request: Request, background_tasks: BackgroundTasks):
     whatsapp_request = await request.json()
-    logger.debug(f"Green incoming: {whatsapp_request}")
+    logger.info(f"Green incoming: {whatsapp_request}")
 
     if whatsapp_request.get("typeWebhook") != "incomingMessageReceived":
         return {"status": "ignored"}

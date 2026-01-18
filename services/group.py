@@ -14,6 +14,7 @@ async def group_handler(whatsapp_request: dict):
     timestamp = whatsapp_request["timestamp"]
     actual_sender = sender_data.get("sender", "Unknown")
     group_name = sender_data.get("chatName", "Unknown Group")
+    chat_id = sender_data.get("chatId", "Unknown ChatID")
     logger.info(f"Group {msg_type} from {group_name} sender: {actual_sender}")
 
     if is_too_old(timestamp, max_age_hours=12):
@@ -29,8 +30,10 @@ async def group_handler(whatsapp_request: dict):
 
     # if is_night_hours(timestamp):
     if is_night_hours(timestamp) and actual_sender != ADMIN_CHAT_ID:
-        if not await db.is_duplicate('sender', f'{group_name}:{actual_sender}', ttl_seconds=300):
+        logger.info(f'Now is night hours. Got: {group_name}:{actual_sender}')
+        if not await db.is_duplicate('night', f'{chat_id}', ttl_seconds=3600):
             return night_response(sender_data, msg_id, actual_sender, group_name)
+        logger.info(f"Night hours - duplicate message ignored: {actual_sender} in {group_name} / {chat_id}")
         return {"status": "group_outside_hours_many_messages"}
 
     # reply only for pic with barcode:

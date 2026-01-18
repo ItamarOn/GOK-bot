@@ -22,8 +22,10 @@ def mock_redis_manager():
 # duplicate call at nighttime
 @patch('services.group.is_too_old', return_value=False)
 @patch('services.group.is_night_hours', return_value=True)
+@patch('services.group.green_send_message')
 @pytest.mark.asyncio
 async def test_group_handler_night_duplicate(
+        mock_green_send_message,
         mock_is_night_hours,
         mock_is_too_old,
         mock_redis_manager
@@ -50,8 +52,7 @@ async def test_group_handler_night_duplicate(
     redis_values = await mock_redis_manager.execute_command('KEYS', '*')
     assert redis_values == [
         b'dup:msg-g:AC584E061E32C650FDE0817A965D54D6',
-        f"dup:sender:{whatsapp_request['senderData']['chatName']}:{whatsapp_request['senderData']['sender']}".encode(
-            "utf-8"),
+        f"dup:night:{whatsapp_request['senderData']['chatId']}".encode("utf-8"),
         b'dup:msg-g:some_ID_ACG65TR4345342',
         b'dup:msg-g:some_ID2_F545454545411'
     ]

@@ -38,7 +38,7 @@ class RedisManager:
         # SET NX - set only if not exist - returns True if set, False otherwise
         was_set = await self.client.set(key, "1", ex=ttl_seconds, nx=True)
         if not was_set:
-            logger.debug(f"Duplicate detected for {key}")
+            logger.info(f"Duplicate detected for {key}")
             return True
         return False
 
