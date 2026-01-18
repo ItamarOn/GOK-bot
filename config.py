@@ -31,6 +31,7 @@ WHITE_IP = os.getenv("WHITE_IP")
 GREEN_ID = os.getenv("GREEN_ID")
 GREEN_TOKEN = os.getenv("GREEN_TOKEN")
 ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")
+REPORTS_CHAT_ID = os.getenv("REPORTS_CHAT_ID")
 ENVIRONMENT = os.getenv("ENVIRONMENT", "DEV")
 # for Redis connection
 REDIS_URL = os.getenv("REDIS_URL")

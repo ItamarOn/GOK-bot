@@ -9,15 +9,14 @@ def update_admin_startup():
     else:
         logger.error('Green API is not available')
     time_now = datetime.now(tz_info).strftime("%H:%M %d/%m")
-    green_send_message(
-        ADMIN_CHAT_ID,
-        f"Bot has been started ({time_now}).\n\n"
-        f"Environment: {ENVIRONMENT}\n"
-        f"Version: {RENDER_GIT_COMMIT[:7]}\n"
-        f"hostname: {socket.gethostname()}\n"
-    )
     try:
-        pass
+        green_send_message(
+            ADMIN_CHAT_ID,
+            f"Bot has been started ({time_now}).\n\n"
+            f"Environment: {ENVIRONMENT}\n"
+            f"Version: {RENDER_GIT_COMMIT[:7]}\n"
+            f"hostname: {socket.gethostname()}\n"
+        )
     except:
         logger.exception("Failed to send startup message to admin.")
 

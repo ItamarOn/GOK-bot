@@ -1,6 +1,7 @@
 from config import logger
 from core.engine import check_barcode
 from core.message import green_send_message
+from services.reports import report_new_user_startup
 from utils.texts import HELP_KEYWORDS, TEXTS, THANKS_KEYWORDS
 from utils.redis_manager import db
 
@@ -17,7 +18,10 @@ async def personal_chat_handler(whatsapp_request: dict):
         return {"status": "duplicate_ignored"}
 
     sender_digits = "".join(c for c in sender if c.isdigit())
-    await db.increment_counter(sender_digits)
+    number_of_requests = db.increment_counter(sender_digits)
+    if number_of_requests == 1:
+        report_new_user_startup(whatsapp_request)
+        green_send_message(sender, TEXTS["welcome"])
 
     # pic
     if msg_type == "imageMessage":

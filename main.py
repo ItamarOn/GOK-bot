@@ -55,6 +55,18 @@ async def redis_keys_count(admin: str = Depends(verify_admin)):
     count = await db.count_keys()
     return {"total_keys": count}
 
+@app.delete("/redis/remove", tags=["system"])
+async def redis_del_key(key:str = 'nothing', admin: str = Depends(verify_admin)):
+    if not db.client:
+        return {"error": "Redis client not connected"}
+    if not key or key=='*':
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid key provided"
+        )
+    deleted = await db.client.delete(key)
+    return {"deleted_keys": deleted}
+
 @app.get("/health/redis/all", tags=["system"])
 async def redis_all_data(limit: int = 100, prefix: str = 'co', admin: str = Depends(verify_admin)):
     if not db.client:
