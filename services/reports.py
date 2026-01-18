@@ -10,7 +10,7 @@ def report_new_user_startup(whatsapp_request):
         REPORTS_CHAT_ID,
         f"({time_now}) new chat started.\n"
         f"user whatsapp`s name: {s['senderName']} from number {s['sender'].split('@')[0]})\n"
-        f"the message is : `{m.get('textMessage', {}).get('textMessageData', '')}"
+        f"the message is : `{m.get('textMessageData', {}).get('textMessage', '')}"
         f" {m.get('fileMessageData', {}).get('mimeType', '')}`"
     )
 
