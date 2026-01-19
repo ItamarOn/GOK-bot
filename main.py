@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, BackgroundTasks, HTTPException, Depends, status
 from fastapi.security import APIKeyHeader
 
-from config import logger, ADMIN_SECRET_TOKEN
+from config import logger, ADMIN_SECRET_TOKEN, MATES
 from services.admin import update_admin_startup, update_admin_shutdown
 from services.reports import report_service_version
 from services.group import group_handler
@@ -105,6 +105,12 @@ async def green_webhook(request: Request, background_tasks: BackgroundTasks):
 
     # Group Chat logic:
     if "@g.us" in whatsapp_request["senderData"].get("chatId", ""):
+        # reduce unprocessed tasks:
+        if whatsapp_request["senderData"].get('sender').split('@')[0] in MATES:
+            return {"status": "group_mate_ignored"}
+        if whatsapp_request["messageData"].get("typeMessage") != "imageMessage":
+            return {"status": "group_non_image_ignored"}
+        # group message processing in background:
         background_tasks.add_task(group_handler, whatsapp_request)
         return {'status': 'group_acknowledged'}
 

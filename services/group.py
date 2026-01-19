@@ -25,9 +25,6 @@ async def group_handler(whatsapp_request: dict):
         logger.info(f"Duplicate message ignored: {msg_id} from {actual_sender} in {group_name}")
         return {"status": "duplicate_ignored"}
 
-    if actual_sender.split('@')[0] in MATES:
-        return {"status": "group_mate_ignored"}
-
     # if is_night_hours(timestamp):
     if is_night_hours(timestamp) and actual_sender != ADMIN_CHAT_ID:
         logger.info(f'Now is night hours. Got: {group_name}:{actual_sender}')
