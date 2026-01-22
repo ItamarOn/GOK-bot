@@ -14,7 +14,7 @@ def green_send_message(chat_id: str, text: str, reply_to: str = None):
     if reply_to:
         payload["quotedMessageId"] = reply_to
 
-    logger.debug(f"Will post payload: {payload}")
+    logger.info(f"Response: {payload}")
 
     response = requests.post(url, json=payload)
     if not response.ok:

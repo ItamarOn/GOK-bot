@@ -1,5 +1,6 @@
 # .gitignore
 .venv/
+debug/
 *.pyc
 .env
 ADMIN.md
