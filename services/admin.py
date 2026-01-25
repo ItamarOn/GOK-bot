@@ -23,8 +23,8 @@ def update_admin_startup():
 
 async def update_admin_shutdown(db):
     try:
-        group_msg_last_24h_count = await db.count_keys('msg-g:')
-        personal_msg_last_24h_count = await db.count_keys('msg-p:')
+        group_msg_last_24h_count = await db.count_keys('dup:msg-g:')
+        personal_msg_last_24h_count = await db.count_keys('dup:msg-p:')
         # number_of_personal_chats = await db.count_keys('co:')
         green_send_message(
             ADMIN_CHAT_ID,
