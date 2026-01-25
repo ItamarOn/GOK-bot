@@ -86,13 +86,13 @@ class RedisManager:
     async def sync_app_version(self, cur_version: str) -> Tuple[bool, Optional[str]]:
         """
         Stores current_version in Redis only if different.
-        Returns: (changed, previous_version)
+        Returns: (changed, current_version)
         """
         await self._ensure_connection()
         key = 'app:version'
         previous = await self.client.get(key)
         if previous == cur_version:
-            return False, previous
+            return False, cur_version
 
         await self.client.set(key, cur_version)
         return True, cur_version

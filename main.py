@@ -30,7 +30,7 @@ async def lifespan(app: FastAPI):
     await report_version_update(db)
     yield
     if db.client:
-        update_admin_shutdown(db)
+        await update_admin_shutdown(db)
         await db.client.close()
         logger.info("Redis connection closed")
 

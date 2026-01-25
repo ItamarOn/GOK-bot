@@ -21,11 +21,11 @@ def update_admin_startup():
         logger.exception("Failed to send startup message to admin.")
 
 
-def update_admin_shutdown(db):
+async def update_admin_shutdown(db):
     try:
-        group_msg_last_24h_count = db.count_keys('msg-g:')
-        personal_msg_last_24h_count = db.count_keys('msg-p:')
-        # number_of_personal_chats = db.count_keys('co:')
+        group_msg_last_24h_count = await db.count_keys('msg-g:')
+        personal_msg_last_24h_count = await db.count_keys('msg-p:')
+        # number_of_personal_chats = await db.count_keys('co:')
         green_send_message(
             ADMIN_CHAT_ID,
             "🔴Bot is shutting down.\n\n"
