@@ -80,7 +80,7 @@ class RedisManager:
             count = 0
             async for _ in self.client.scan_iter(match=match):
                 count += 1
-        logger.info(f"Number of {match} keys in Redis: {count}")
+        logger.debug(f"Number of {match} keys in Redis: {count}")
         return count
 
     async def sync_app_version(self, cur_version: str) -> Tuple[bool, Optional[str]]:
