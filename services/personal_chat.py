@@ -35,13 +35,14 @@ async def personal_chat_handler(whatsapp_request: dict):
     # text
     if msg_type == "textMessage":
         text = msg_data["textMessageData"]["textMessage"].lower().strip()
+        if text.startswith(TEXTS["bug"]['prefix']):
+            report_bug_request(whatsapp_request)
+            green_send_message(sender, TEXTS["bug"]["acknowledgement"])
+            return {"status": "bug_reported"}
         if text in HELP_KEYWORDS:
             logger.info(f"Help message requested from {sender}")
             green_send_message(sender, TEXTS["welcome"])
             return {"status": "help_sent"}
-        if text.startswith(TEXTS["bug"]['prefix']):
-            report_bug_request(whatsapp_request)
-            green_send_message(sender, TEXTS["bug"]["acknowledgement"])
 
         digits = "".join(c for c in text if c.isdigit())
         if digits:
