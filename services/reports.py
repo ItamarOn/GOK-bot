@@ -14,6 +14,15 @@ def report_new_user_startup(whatsapp_request):
         f" {m.get('fileMessageData', {}).get('mimeType', '')}`"
     )
 
+def report_bug_request(whatsapp_request):
+    s = whatsapp_request['senderData']
+    m = whatsapp_request['messageData']
+    green_send_message(
+        REPORTS_CHAT_ID,
+        f"Bug reported by `{s['senderName']}` ({s['sender'].split('@')[0]}), the message is:\n"
+        f"`{m.get('textMessageData', {}).get('textMessage', '')}`"
+    )
+
 async def report_version_update(db):
     cur_version = RENDER_GIT_COMMIT[:7]
     is_change, version = await db.sync_app_version(cur_version)
@@ -22,3 +31,4 @@ async def report_version_update(db):
             REPORTS_CHAT_ID,
             f"Service version updated to: {version}"
         )
+
