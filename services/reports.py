@@ -1,5 +1,3 @@
-from appier.async_old import await_wrap
-
 from config import REPORTS_CHAT_ID, tz_info, RENDER_GIT_COMMIT
 from core.message import green_send_message
 from datetime import datetime
