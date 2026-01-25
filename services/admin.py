@@ -12,7 +12,7 @@ def update_admin_startup():
     try:
         green_send_message(
             ADMIN_CHAT_ID,
-            f"Bot has been started ({time_now}).\n\n"
+            f"🟢Bot has been started ({time_now}).\n\n"
             f"Environment: {ENVIRONMENT}\n"
             f"Version: {RENDER_GIT_COMMIT[:7]}\n"
             f"hostname: {socket.gethostname()}\n"
@@ -21,15 +21,19 @@ def update_admin_startup():
         logger.exception("Failed to send startup message to admin.")
 
 
-def update_admin_shutdown():
+def update_admin_shutdown(db):
     try:
-        # add redis personal count
-        # add redis group count
+        group_msg_last_24h_count = db.count_keys('msg-g:')
+        personal_msg_last_24h_count = db.count_keys('msg-p:')
+        # number_of_personal_chats = db.count_keys('co:')
         green_send_message(
             ADMIN_CHAT_ID,
-            "Bot is shutting down.\n\n"
+            "🔴Bot is shutting down.\n\n"
             f"Environment: {ENVIRONMENT}\n"
             f"hostname: {socket.gethostname()}\n"
+            f"In the last 24h:\n"
+            f" - Group messages processed: {group_msg_last_24h_count}\n"
+            f" - Personal messages processed: {personal_msg_last_24h_count}\n"
         )
     except:
         logger.exception("Failed to send shutdown message to admin.")

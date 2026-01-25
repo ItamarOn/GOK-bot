@@ -5,7 +5,7 @@ from fastapi.security import APIKeyHeader
 
 from config import logger, ADMIN_SECRET_TOKEN, MATES
 from services.admin import update_admin_startup, update_admin_shutdown
-from services.reports import report_service_version
+from services.reports import report_version_update
 from services.group import group_handler
 from services.personal_chat import personal_chat_handler
 from utils.redis_manager import db
@@ -27,12 +27,12 @@ async def lifespan(app: FastAPI):
     await db.connect()
     logger.info("Redis connected successfully")
     update_admin_startup()
-    report_service_version()
+    await report_version_update(db)
     yield
     if db.client:
+        update_admin_shutdown(db)
         await db.client.close()
         logger.info("Redis connection closed")
-        update_admin_shutdown()
 
 app = FastAPI(lifespan=lifespan)
 
