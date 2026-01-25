@@ -28,12 +28,10 @@ async def update_admin_shutdown(db):
         # number_of_personal_chats = await db.count_keys('co:')
         green_send_message(
             ADMIN_CHAT_ID,
-            "🔴Bot is shutting down.\n\n"
-            f"Environment: {ENVIRONMENT}\n"
-            f"hostname: {socket.gethostname()}\n"
-            f"In the last 24h:\n"
-            f" - Group messages processed: {group_msg_last_24h_count}\n"
-            f" - Personal messages processed: {personal_msg_last_24h_count}\n"
+            f"🔴Bot is shutting down. ({ENVIRONMENT}) on {socket.gethostname()[:5]}\n"
+            f"Last 24h processed messages:\n"
+            f" - Group: {group_msg_last_24h_count}\n"
+            f" - Personal: {personal_msg_last_24h_count}\n"
         )
     except:
         logger.exception("Failed to send shutdown message to admin.")
