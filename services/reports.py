@@ -29,6 +29,6 @@ async def report_version_update(db):
     if is_change:
         green_send_message(
             REPORTS_CHAT_ID,
-            f"Service version updated to: {version}"
+            f"New bot version: {version}"
         )
 
