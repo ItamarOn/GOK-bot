@@ -1,7 +1,7 @@
 from config import logger
 from core.engine import check_barcode
 from core.message import green_send_message
-from services.reports import report_new_user_startup
+from services.reports import report_new_user_startup, report_bug_request
 from utils.texts import HELP_KEYWORDS, TEXTS, THANKS_KEYWORDS
 from utils.redis_manager import db
 
@@ -21,7 +21,7 @@ async def personal_chat_handler(whatsapp_request: dict):
     number_of_requests = await db.increment_counter(sender_digits)
     if number_of_requests == 1:
         report_new_user_startup(whatsapp_request)
-        green_send_message(sender, TEXTS["welcome"])
+        green_send_message(sender, TEXTS["welcome"] + TEXTS["bug"]["bug_report"])
 
     # pic
     if msg_type == "imageMessage":
@@ -35,6 +35,10 @@ async def personal_chat_handler(whatsapp_request: dict):
     # text
     if msg_type == "textMessage":
         text = msg_data["textMessageData"]["textMessage"].lower().strip()
+        if text.startswith(TEXTS["bug"]['prefix']):
+            report_bug_request(whatsapp_request)
+            green_send_message(sender, TEXTS["bug"]["acknowledgement"])
+            return {"status": "bug_reported"}
         if text in HELP_KEYWORDS:
             logger.info(f"Help message requested from {sender}")
             green_send_message(sender, TEXTS["welcome"])
