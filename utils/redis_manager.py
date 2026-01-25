@@ -1,3 +1,5 @@
+from typing import Tuple, Optional
+
 import redis.asyncio as redis
 from config import logger, REDIS_URL
 
@@ -80,6 +82,21 @@ class RedisManager:
                 count += 1
         logger.info(f"Number of {match} keys in Redis: {count}")
         return count
+
+    async def sync_app_version(self, cur_version: str) -> Tuple[bool, Optional[str]]:
+        """
+        Stores current_version in Redis only if different.
+        """
+        await self._ensure_connection()
+        key = 'app:version'
+        previous = await self.client.get(key)
+
+        if previous == cur_version:
+            return False, cur_version
+
+        await self.client.set(key, cur_version)
+        logger.info(f"App version updated in Redis: {cur_version} (was: {previous})")
+        return True, cur_version
 
 
 db = RedisManager()  # Singleton instance

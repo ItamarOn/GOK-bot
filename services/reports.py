@@ -14,10 +14,11 @@ def report_new_user_startup(whatsapp_request):
         f" {m.get('fileMessageData', {}).get('mimeType', '')}`"
     )
 
-def report_service_version():
-    pass
-    ###   Send only if the version is not new, for this - add version in DB....
-    # green_send_message(
-    #     REPORTS_CHAT_ID,
-    #     f"Bot is alive. Version: {RENDER_GIT_COMMIT[:7]}"
-    # )
+async def report_version_update(db):
+    cur_version = RENDER_GIT_COMMIT[:7]
+    is_change, version = await db.sync_app_version(cur_version)
+    if is_change:
+        green_send_message(
+            REPORTS_CHAT_ID,
+            f"Service version updated to: {version}"
+        )
