@@ -1,7 +1,7 @@
 from config import logger
 from core.engine import check_barcode
 from core.message import green_send_message
-from services.reports import report_new_user_startup, report_bug_request
+from services.reports import report_new_user_startup, report_bug_request, report_quoted_response
 from utils.texts import HELP_KEYWORDS, TEXTS, THANKS_KEYWORDS
 from utils.redis_manager import db
 
@@ -37,7 +37,7 @@ async def personal_chat_handler(whatsapp_request: dict):
         quoted = msg_data.get('quotedMessage', {}).get('textMessage', '')
         if any(term in quoted for term in TEXTS["group"].values()):
             logger.info(f"User {sender} replied to group message")
-            green_send_message(sender, TEXTS["bug"]["bug_report"])
+            report_quoted_response(whatsapp_request)
             return {"status": "bug_report_procedure_sent"}
     # text
     if msg_type == "textMessage":
