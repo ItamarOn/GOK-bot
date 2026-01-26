@@ -14,6 +14,15 @@ def report_new_user_startup(whatsapp_request):
         f" {m.get('fileMessageData', {}).get('mimeType', '')}`"
     )
 
+def report_quoted_response(whatsapp_request):
+    s = whatsapp_request['senderData']
+    m = whatsapp_request['messageData']
+    green_send_message(
+        REPORTS_CHAT_ID,
+        f"User: `{s['senderName']}` ({s['sender'].split('@')[0]}) quote bot group message and wrote: "
+        f"`{m.get('extendedTextMessageData', {}).get('text', '')}"
+    )
+
 def report_bug_request(whatsapp_request):
     s = whatsapp_request['senderData']
     m = whatsapp_request['messageData']
