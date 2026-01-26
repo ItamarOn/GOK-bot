@@ -42,7 +42,8 @@ async def personal_chat_handler(whatsapp_request: dict):
         if any(term in quoted for term in TEXTS["group"].values()):
             logger.info(f"User {sender} replied to group message")
             report_quoted_response(whatsapp_request)
-            return {"status": "bug_report_procedure_sent"}
+            return {"status": "quoted message reported"}
+
     # text
     if msg_type == "textMessage":
         text = msg_data["textMessageData"]["textMessage"].lower().strip()
