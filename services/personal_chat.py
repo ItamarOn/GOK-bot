@@ -43,6 +43,11 @@ async def personal_chat_handler(whatsapp_request: dict):
             logger.info(f"Help message requested from {sender}")
             green_send_message(sender, TEXTS["welcome"])
             return {"status": "help_sent"}
+        if quoted := msg_data.get('quotedMessage', {}).get('textMessage', ''):
+            if any(kw in quoted for kw in TEXTS["group"].values()):
+                logger.info(f"User {sender} replied to group message")
+                green_send_message(sender, TEXTS["bug"]["bug_report"])
+                return {"status": "bug_report_procedure_sent"}
 
         digits = "".join(c for c in text if c.isdigit())
         if digits:
