@@ -24,8 +24,10 @@ async def personal_chat_handler(whatsapp_request: dict):
     sender_digits = "".join(c for c in sender if c.isdigit())
     number_of_requests = await db.increment_counter(sender_digits)
     if number_of_requests == 1:
-        report_new_user_startup(whatsapp_request)
+        text = report_new_user_startup(whatsapp_request)
         green_send_message(sender, TEXTS["welcome"] + TEXTS["bug"]["bug_report"])
+        if text in HELP_KEYWORDS:
+            return {"status": "new_user_thanks_sent"}
 
     # pic
     if msg_type == "imageMessage":
