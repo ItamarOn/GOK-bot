@@ -6,13 +6,17 @@ def report_new_user_startup(whatsapp_request):
     time_now = datetime.now(tz_info).strftime("%H:%M %d/%m")
     s = whatsapp_request['senderData']
     m = whatsapp_request['messageData']
+    text = (m.get('textMessageData', {}).get('textMessage', '') or
+            m.get('fileMessageData', {}).get('mimeType', '') or
+            m.get('extendedTextMessageData', {}).get('text', '') or
+            'unextractable')
     green_send_message(
         REPORTS_CHAT_ID,
         f"({time_now}) new chat started.\n"
         f"user whatsapp's name: `{s['senderName']}` from number {s['sender'].split('@')[0]}\n"
-        f"the message is : `{m.get('textMessageData', {}).get('textMessage', '')}"
-        f" {m.get('fileMessageData', {}).get('mimeType', '')}`"
+        f"the message is : `{text}`"
     )
+    return text
 
 def report_quoted_response(whatsapp_request):
     s = whatsapp_request['senderData']
