@@ -26,7 +26,8 @@ async def personal_chat_handler(whatsapp_request: dict):
     if number_of_requests == 1:
         text = report_new_user_startup(whatsapp_request)
         green_send_message(sender, TEXTS["welcome"] + TEXTS["bug"]["bug_report"])
-        if text in HELP_KEYWORDS:
+        # ignore duplicate, ignore green api signs (sometimes '{{SWE001}}' is first message)
+        if text in HELP_KEYWORDS or '{' in text:
             return {"status": "new_user_thanks_sent"}
 
     # pic
