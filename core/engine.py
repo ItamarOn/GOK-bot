@@ -175,25 +175,3 @@ def smart_retry(barcodes: list[str], e):
     time.sleep(sleep_time)
     return ask_gok(barcodes, retry_seconds=sleep_time)
 
-
-def leading_zero_retry(barcode_data: str) -> str:
-    """
-    Retry GOK query by removing leading zeros (up to 3)
-    GTIN-13 format include EAN-13 and UPC-A. by add leading '0' to UPC-A.
-    to align with GOK system we must remove this leading '0' for EAN-13.
-    """
-    barcodes_to_check = []
-    results = {}
-    for i in range(1, 4):
-        if len(barcode_data) < i or barcode_data[i-1] != '0':
-            break
-        barcodes_to_check.append(barcode_data[i:])
-
-    time.sleep(6)
-    result = ask_gok(barcodes_to_check, 1)
-    if any(sign in result for sign in LISTED_SIGNS):
-        return TEXTS['barcode']['edited'] + modified_barcode + '\n' + result
-    results[modified_barcode] = result
-    logger.info(f'No results after leading zero retries: {results}')
-    printed_results = "\n".join(results.keys())
-    return f'{printed_results}\n' + TEXTS["errors"]["gok_not_found"]
