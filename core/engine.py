@@ -11,7 +11,7 @@ from config import (
     GOK_API_TOKEN,
     WHITE_IP,
 )
-from utils.texts import TEXTS, GOK_STATUS
+from utils.texts import TEXTS, GOK_STATUS, LISTED_SIGNS
 
 FOOD_BARCODES = {"EAN13", "EAN8"}  # UPC-A is normalized to GTIN-13 by adding a leading '0' (GS1 standard).
 
@@ -128,6 +128,9 @@ def ask_gok(barcode_data: str, retry_seconds=0):
         if kashrut_type == GOK_STATUS['not_kosher']:
             return product_name + TEXTS["product_status"]["not_kosher"]
 
+        if kashrut_type == GOK_STATUS['unknown']:
+            return product_name + TEXTS["product_status"]["unknown"]
+
         logger.debug("Kosher")
         cert = product_info[0]['kashrutCerts'][0] if product_info[0]['kashrutCerts'] else ''
         return product_name + TEXTS["product_status"]["kosher_template"].format(
@@ -163,7 +166,7 @@ def leading_zero_retry(barcode_data: str) -> str:
         logger.debug(f"try barcode without {i} leading zeros: {modified_barcode}")
         time.sleep(6)
         result = ask_gok(modified_barcode, 1)
-        if TEXTS["product_status"]["not_kosher"] in result or '✅' in result:
+        if any(sign in result for sign in LISTED_SIGNS):
             return TEXTS['barcode']['edited'] + modified_barcode + '\n' + result
         results[modified_barcode] = result
     logger.info(f'No results after leading zero retries: {results}')
