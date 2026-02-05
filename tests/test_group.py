@@ -105,7 +105,7 @@ async def test_group_handler_barcode_not_found(
     ]
 
 
-# image with kosher barcode - 4 statuses to check - in_review, not_kosher, unknown, kosher_template
+# image with kosher barcode - 3 statuses should mark as listed: not_kosher, unknown, kosher_template
 @pytest.mark.parametrize("gok_result", [
     TEXTS["product_status"]["not_kosher"],
     TEXTS["product_status"]["unknown"],
