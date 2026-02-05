@@ -105,24 +105,26 @@ async def test_group_handler_barcode_not_found(
     ]
 
 
-# image with kosher barcode
-@patch('services.group.check_barcode',
-       return_value='123456789\n ברקוד {}'.format(
-           TEXTS["product_status"]["kosher_template"].format(
-               kashrut_type='kashrut_type',
-               cert='cert')
-       ))
+# image with kosher barcode - 3 statuses should mark as listed: not_kosher, unknown, kosher_template
+@pytest.mark.parametrize("gok_result", [
+    TEXTS["product_status"]["not_kosher"],
+    TEXTS["product_status"]["unknown"],
+    TEXTS["product_status"]["kosher_template"].format(kashrut_type='kashrut_type', cert='cert'),
+])
+@patch('services.group.check_barcode')
 @patch('services.group.green_send_message')
 @patch('services.group.is_night_hours', return_value=False)
 @patch('services.group.is_too_old', return_value=False)
 @pytest.mark.asyncio
 async def test_group_handler_kosher_barcode(
-        mock_check_barcode,
-        mock_green_send_message,
-        mock_is_night_hours,
+        #mock_redis_manager,
         mock_is_too_old,
-        mock_redis_manager,
+        mock_is_night_hours,
+        mock_green_send_message,
+        mock_check_barcode,
+        gok_result,
 ):
+    mock_check_barcode.return_value = '123456789\n ברקוד {}'.format(gok_result)
     group_pic_example2 = group_pic_example.copy()
     group_pic_example2['idMessage'] = 'some_other_id_67890'
     result = await group_handler(group_pic_example)

@@ -38,7 +38,8 @@ TEXTS = {
     "product_status": {
         "in_review": "לא קיים מידע במערכת GOK🤷",
         "not_kosher": "❌ לא כשר",
-        "kosher_template": "{kashrut_type} ✅{cert}",  # we use the "✅" sign as identifier for group_handler
+        "unknown": "🚫 לא ידוע-אין פרטים",
+        "kosher_template": "{kashrut_type} ✅{cert}",  # we use "✅" as identifier for group_handler (as LISTED_SIGNS)
     },
     "barcode": {
         "prefix": "ברקוד: ",
@@ -64,7 +65,9 @@ TEXTS = {
 GOK_STATUS = {
     "confirmed": 'מוצר מאושר ע"י הרב לשימוש במערכת',
     "not_kosher": "לא כשר",
+    "unknown": "לא ידוע-אין פרטים",
 }
 
+LISTED_SIGNS = [ "✅", "❌", "🚫"]
 HELP_KEYWORDS = ["hi", "hello", "hey", "שלום", "היי", "הי", "start", "help", "עזרה"]
 THANKS_KEYWORDS = ["thank", "tnx", "תודה", "אשריך"]
