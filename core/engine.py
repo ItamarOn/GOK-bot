@@ -34,7 +34,7 @@ def check_barcode(media_url: str, text=False) -> str:
         logger.info(f"Barcode (text) detected: {media_url}")
         return (
             TEXTS["barcode"]["prefix"] + f"{media_url}\n"
-            + ask_gok(media_url)
+            + ask_gok([media_url])
         )
 
     try:
@@ -66,7 +66,7 @@ def check_barcode(media_url: str, text=False) -> str:
 
         return (
             TEXTS["barcode"]["prefix"] + f"{barcode_data}\n"
-            + ask_gok(barcode_data)
+            + ask_gok([barcode_data])
         )
 
     except Exception as e:
@@ -74,14 +74,11 @@ def check_barcode(media_url: str, text=False) -> str:
         return TEXTS["errors"]["exception"]
 
 
-def ask_gok(barcode_data: str, retry_seconds=0):
+def ask_gok(barcode_data: list[str], retry_seconds=0):
     url = "https://www.zekasher.com/api/v1/products"
+    queries = barcodes_to_queries(barcode_data)
     payload = {
-        "queries": [
-            {
-                "barcode": f"{barcode_data}",
-            }
-        ],
+        "queries": queries,
         "user-ip": WHITE_IP,
     }
 
@@ -96,7 +93,7 @@ def ask_gok(barcode_data: str, retry_seconds=0):
     try:
         response = requests.post(url, json=payload, headers=headers)
         response.raise_for_status()
-        product_info = response.json()
+        products_info = response.json()
     except Exception as e:
         if retry_seconds == 0:
             return smart_retry(barcode_data, e)
@@ -105,26 +102,54 @@ def ask_gok(barcode_data: str, retry_seconds=0):
             logger.exception("Cannot get basic response from GOK")
             return TEXTS["errors"]["gok_server_error"]
 
-    if not product_info:
+    logger.debug(f"request: {url} payload: {payload}")
+    return process_gok_response(barcode_data, products_info, retry_seconds == 0)
+
+
+def barcodes_to_queries(barcode_data):
+    if not barcode_data:
+        return []
+
+    if not barcode_data[0].startswith('0') or len(barcode_data) > 1:
+        return [{"barcode": str(b)} for b in barcode_data]
+
+    barcode = barcode_data[0]
+    barcodes_to_check = [barcode, ]
+    for i in range(1, len(barcode)):
+        if len(barcode) < i or barcode[i - 1] != '0':
+            break
+        barcodes_to_check.append(barcode[i:])
+    return [{"barcode": str(b)} for b in barcodes_to_check]
+
+
+
+def process_gok_response(barcode_data: list[str], products_info: list[dict], is_first_run) -> str:
+    logger.debug(f'products_info={products_info} is_first_run={is_first_run}')
+
+    if not products_info:
         logger.debug(f"{barcode_data} Doesn't exist in GOK system")
-        if barcode_data.startswith('0') and retry_seconds == 0:
-            return leading_zero_retry(barcode_data)
+        if len(barcode_data) > 1:
+            printed_results = "\n".join(barcode_data)
+            return f'{printed_results}\n' + TEXTS["errors"]["gok_not_found"]
         return TEXTS["errors"]["gok_not_found"]
 
     try:
-        logger.debug(f'retry after {retry_seconds} seconds') if retry_seconds else None
-        logger.debug(f"product_info[0]:\n{product_info[0]}\n")
+        info = products_info[0]
 
-        product_name = html.unescape(product_info[0].get('name', '')) + '\n'
-        status = product_info[0]['status']
+        if len(products_info) > 1:
+            for confirm_product in products_info:
+                if confirm_product.get('status') == GOK_STATUS['confirmed']:
+                    info = confirm_product
+                    break
 
-        if status != GOK_STATUS['confirmed'] or not product_info[0].get('kashrutTypes'):
+        product_name = html.unescape(info.get('name', '')) + '\n'
+        status = info['status']
+
+        if status != GOK_STATUS['confirmed'] or not info.get('kashrutTypes'):
             logger.debug(f"Product status: {status}")
-            if barcode_data.startswith('0') and retry_seconds == 0:
-                return leading_zero_retry(barcode_data)
             return product_name + TEXTS["product_status"]["in_review"]
 
-        kashrut_type = product_info[0]['kashrutTypes'][0]
+        kashrut_type = info['kashrutTypes'][0]
         if kashrut_type == GOK_STATUS['not_kosher']:
             return product_name + TEXTS["product_status"]["not_kosher"]
 
@@ -132,24 +157,23 @@ def ask_gok(barcode_data: str, retry_seconds=0):
             return product_name + TEXTS["product_status"]["unknown"]
 
         logger.debug("Kosher")
-        cert = product_info[0]['kashrutCerts'][0] if product_info[0]['kashrutCerts'] else ''
+        cert = info['kashrutCerts'][0] if info['kashrutCerts'] else ''
         return product_name + TEXTS["product_status"]["kosher_template"].format(
             kashrut_type=kashrut_type,
             cert=cert,
         )
 
     except Exception as e:
-        logger.debug(f"request: {url} payload: {payload}")
-        logger.debug(f"response: {response.json()}")
+        logger.debug(f"response: {products_info}")
         logger.exception("200 OK for asking GOK, But error for parsing")
         return TEXTS["errors"]["internal_logic_error"]
 
 
-def smart_retry(barcode_data, e):
-    sleep_time = random.randint(9, 25)
+def smart_retry(barcodes: list[str], e):
+    sleep_time = random.randint(6, 12)
     logger.debug(f"retrying after {sleep_time} seconds. due to exception: {e}")
     time.sleep(sleep_time)
-    return ask_gok(barcode_data, retry_seconds=sleep_time)
+    return ask_gok(barcodes, retry_seconds=sleep_time)
 
 
 def leading_zero_retry(barcode_data: str) -> str:
@@ -158,17 +182,18 @@ def leading_zero_retry(barcode_data: str) -> str:
     GTIN-13 format include EAN-13 and UPC-A. by add leading '0' to UPC-A.
     to align with GOK system we must remove this leading '0' for EAN-13.
     """
+    barcodes_to_check = []
     results = {}
-    for i in range(1, 3):
+    for i in range(1, 4):
         if len(barcode_data) < i or barcode_data[i-1] != '0':
             break
-        modified_barcode = barcode_data[i:]
-        logger.debug(f"try barcode without {i} leading zeros: {modified_barcode}")
-        time.sleep(6)
-        result = ask_gok(modified_barcode, 1)
-        if any(sign in result for sign in LISTED_SIGNS):
-            return TEXTS['barcode']['edited'] + modified_barcode + '\n' + result
-        results[modified_barcode] = result
+        barcodes_to_check.append(barcode_data[i:])
+
+    time.sleep(6)
+    result = ask_gok(barcodes_to_check, 1)
+    if any(sign in result for sign in LISTED_SIGNS):
+        return TEXTS['barcode']['edited'] + modified_barcode + '\n' + result
+    results[modified_barcode] = result
     logger.info(f'No results after leading zero retries: {results}')
     printed_results = "\n".join(results.keys())
     return f'{printed_results}\n' + TEXTS["errors"]["gok_not_found"]
