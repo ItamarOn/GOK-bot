@@ -1,9 +1,9 @@
-from config import logger, MATES, ADMIN_CHAT_ID
+from config import logger, ADMIN_CHAT_ID
 from core.engine import check_barcode
 
 from core.message import green_send_message
 from utils.time_check import is_night_hours, is_too_old
-from utils.texts import TEXTS
+from utils.texts import TEXTS, LISTED_SIGNS
 from utils.redis_manager import db
 
 async def group_handler(whatsapp_request: dict):
@@ -57,7 +57,7 @@ async def group_handler(whatsapp_request: dict):
             green_send_message(sender_data["chatId"], unlisted_msg, reply_to=msg_id)
             return {"status": "group_unlisted"}
 
-        if TEXTS["product_status"]["not_kosher"] in result or "✅" in result:
+        if any(sign in result for sign in LISTED_SIGNS):
             logger.info(f"Group image with status: {msg_id} from {actual_sender} in {group_name}")
             green_send_message(sender_data["chatId"], TEXTS['group']['listed'], reply_to=msg_id)
             return {"status": "group_listed"}

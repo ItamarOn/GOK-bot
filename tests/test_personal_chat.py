@@ -19,7 +19,7 @@ def mock_redis_manager():
     with patch('services.personal_chat.db', rm):
         yield fake_client
 
-# @patch('services.personal_chat.check_barcode', return_value="")
+@patch('services.personal_chat.check_barcode', return_value="check_barcode_expected_response")
 @patch('services.personal_chat.green_send_message')
 @patch('services.reports.green_send_message')
 @pytest.mark.asyncio
@@ -35,6 +35,6 @@ async def test_personal_chat_handler_no_barcode(
     assert 'new chat started' in mock_reports_green_send_message.call_args_list[0][0][1]
 
     assert mock_personal_chat_green_send_message.call_count == 2  # once from hello-help one for report
-    assert mock_personal_chat_green_send_message.call_args_list[0][0][1] == TEXTS["welcome"]
-    assert mock_personal_chat_green_send_message.call_args_list[1][0][1] == TEXTS["errors"]["barcode_not_found"]
+    assert mock_personal_chat_green_send_message.call_args_list[0][0][1] == TEXTS["welcome"] + TEXTS["bug"]["bug_report"]
+    assert mock_personal_chat_green_send_message.call_args_list[1][0][1] == "check_barcode_expected_response"
 
