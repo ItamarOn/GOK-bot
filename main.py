@@ -4,7 +4,11 @@ from fastapi import FastAPI, Request, BackgroundTasks, HTTPException, Depends, s
 from fastapi.security import APIKeyHeader
 
 from config import logger, ADMIN_SECRET_TOKEN, MATES
-from services.admin import update_admin_startup, update_admin_shutdown
+from services.admin import (
+    update_admin_startup,
+    update_admin_shutdown,
+    update_admin_failed_outgoing_msg,
+)
 from services.reports import report_version_update
 from services.group import group_handler
 from services.personal_chat import personal_chat_handler
@@ -101,6 +105,9 @@ async def green_webhook(request: Request, background_tasks: BackgroundTasks):
     logger.info(f"Request: {whatsapp_request}")
 
     if whatsapp_request.get("typeWebhook") != "incomingMessageReceived":
+        if whatsapp_request.get("typeWebhook") == "outgoingMessageStatus":
+            update_admin_failed_outgoing_msg(whatsapp_request)
+            return {"status": "failed_outgoing_msg_reported"}
         return {"status": "ignored"}
 
     # Group Chat logic:
