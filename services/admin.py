@@ -35,15 +35,3 @@ async def update_admin_shutdown(db):
         )
     except:
         logger.exception("Failed to send shutdown message to admin.")
-
-
-def update_admin_failed_outgoing_msg(whatsapp_request):
-    try:
-        green_send_message(
-            ADMIN_CHAT_ID,
-            f"🛠{whatsapp_request.get('status')} outgoing message: "
-            f"{whatsapp_request.get('chatId','').split('@')[0]} - "
-            f"{whatsapp_request.get('description')}"
-        )
-    except:
-        logger.exception("Failed to send failed_outgoing_msg.")

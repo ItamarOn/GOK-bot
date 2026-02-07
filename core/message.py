@@ -18,7 +18,6 @@ def green_send_message(chat_id: str, text: str, reply_to: str = None):
     response = requests.post(url, json=payload)
     if not response.ok:
         logger.error(f"Bad response from Green - payload:{payload} - response:{response}")
-    logger.info(response.__dict__)  # try!!!!
 
 
 def is_green_available():
