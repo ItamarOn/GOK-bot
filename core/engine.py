@@ -56,9 +56,9 @@ def check_barcode(media_url: str, text=False) -> str:
             return TEXTS["errors"]["unsupported_barcode"]
 
         if len(food_barcodes) > 1:
-            logger.info(f"{len(food_barcodes)} barcodes detected! Only the first one will be processed.")
+            logger.info(f"{len(food_barcodes)} barcodes detected! Invalid image")
             logger.debug(f"{food_barcodes}")
-            # return TEXTS["errors"]["image_processing"]
+            return TEXTS["errors"]["image_processing"]
 
         barcode = food_barcodes[0]
         barcode_data = barcode.data.decode("utf-8")
