@@ -100,11 +100,11 @@ async def redis_all_data(limit: int = 100, prefix: str = 'co', admin: str = Depe
 
 
 @app.get("/stats", tags=["system"])
-def get_stats(offset: int = 0, send_whatsapp: bool=False, admin: str = Depends(verify_admin)):
+async def get_stats(offset: int = 0, send_whatsapp: bool=False, admin: str = Depends(verify_admin)):
     """Get statistics for current week and last week only (free tier limitation)"""
     if offset > 1:
         return {"error": "Offset too large"}
-    result = db.get_weekly_stats(offset)
+    result = await db.get_weekly_stats(offset)
     if send_whatsapp:
         update_weekly_status(result)
     return result
