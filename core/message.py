@@ -19,7 +19,7 @@ def green_send_message(chat_id: str, text: str, reply_to: str = None):
     if not response.ok:
         logger.error(f"Bad response from Green - payload:{payload} - response:{response}")
 
-    db.track_sent_message(is_group=chat_id.endswith("@g.us"))
+    db.track_sent_message(is_group=chat_id.endswith("@g.us")) # without await
 
 
 def is_green_available():
