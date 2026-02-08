@@ -10,6 +10,7 @@ class RedisManager:
     def __init__(self):
         self.redis_url = REDIS_URL
         self.client = None
+        self.sync_client = None
 
     async def connect(self):
         """Establish connection to Redis once (called on startup)"""
@@ -20,6 +21,7 @@ class RedisManager:
                     encoding="utf-8",
                     decode_responses=True
                 )
+                self.sync_client = redis.Redis.from_url(self.redis_url, decode_responses=True)
                 logger.info(f"Connected to Redis at {self.redis_url}")
         except Exception as e:
             logger.error(f"Failed to connect to Redis: {self.redis_url}")
@@ -115,9 +117,9 @@ class RedisManager:
             message_type = "group" if is_group else "private"
             redis_key = f"stats:{week_key}:received:{message_type}"
 
-            incrementer = self.client.incr(redis_key)
+            incrementer = self.sync_client.incr(redis_key)
             if incrementer == 1:
-                self.client.expire(redis_key, 1209600) # 14 days in seconds
+                self.sync_client.expire(redis_key, 1209600) # 14 days in seconds
         except Exception as e:
             logger.info(f"Failed to track received message: {e}")
 
@@ -128,14 +130,14 @@ class RedisManager:
             message_type = "group" if is_group else "private"
             redis_key = f"stats:{week_key}:sent:{message_type}"
 
-            incrementer = self.client.incr(redis_key)
+            incrementer = self.sync_client.incr(redis_key)
             if incrementer == 1:
-                self.client.expire(redis_key, 1209600)
+                self.sync_client.expire(redis_key, 1209600)
 
         except Exception as e:
             logger.info(f"Failed to track sent message: {e}")
 
-    async def get_weekly_stats(self, week_offset: int = 0) -> dict:
+    def get_weekly_stats(self, week_offset: int = 0) -> dict:
         """
         Get statistics for a specific week (Sunday to Saturday)
 
@@ -160,12 +162,12 @@ class RedisManager:
             return {
                 "week_start": week_key,
                 "received": {
-                    "group": int(await self.client.get(f"stats:{week_key}:received:group") or 0),
-                    "private": int(await self.client.get(f"stats:{week_key}:received:private") or 0)
+                    "group": int(self.sync_client.get(f"stats:{week_key}:received:group") or 0),
+                    "private": int(self.sync_client.get(f"stats:{week_key}:received:private") or 0)
                 },
                 "sent": {
-                    "group": int(await self.client.get(f"stats:{week_key}:sent:group") or 0),
-                    "private": int(await self.client.get(f"stats:{week_key}:sent:private") or 0)
+                    "group": int(self.sync_client.get(f"stats:{week_key}:sent:group") or 0),
+                    "private": int(self.sync_client.get(f"stats:{week_key}:sent:private") or 0)
                 }
             }
         except Exception as e:
