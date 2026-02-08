@@ -8,7 +8,7 @@ from services.admin import (
     update_admin_startup,
     update_admin_shutdown,
 )
-from services.reports import report_version_update
+from services.reports import report_version_update, update_weekly_status
 from services.group import group_handler
 from services.personal_chat import personal_chat_handler
 from utils.redis_manager import db
@@ -98,6 +98,18 @@ async def redis_all_data(limit: int = 100, prefix: str = 'co', admin: str = Depe
         "data": dict(sorted(match_keys.items()))
     }
 
+
+@app.get("/stats", tags=["system"])
+def get_stats(offset: int = 0, send_whatsapp: bool=False, admin: str = Depends(verify_admin)):
+    """Get statistics for current week and last week only (free tier limitation)"""
+    if offset > 1:
+        return {"error": "Offset too large"}
+    result = db.get_weekly_stats(offset)
+    if send_whatsapp:
+        update_weekly_status(result)
+    return result
+
+
 @app.post("/webhook-green", tags=["whatsapp"])
 async def green_webhook(request: Request, background_tasks: BackgroundTasks):
     whatsapp_request = await request.json()
@@ -105,6 +117,9 @@ async def green_webhook(request: Request, background_tasks: BackgroundTasks):
 
     if whatsapp_request.get("typeWebhook") != "incomingMessageReceived":
         return {"status": "ignored"}
+
+    is_group = whatsapp_request.get("senderData", {}).get("chatId", "").endswith("@g.us")
+    db.track_received_message(is_group=is_group)
 
     # Group Chat logic:
     if "@g.us" in whatsapp_request["senderData"].get("chatId", ""):
