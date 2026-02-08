@@ -135,7 +135,7 @@ class RedisManager:
         except Exception as e:
             logger.info(f"Failed to track sent message: {e}")
 
-    def get_weekly_stats(self, week_offset: int = 0) -> dict:
+    async def get_weekly_stats(self, week_offset: int = 0) -> dict:
         """
         Get statistics for a specific week (Sunday to Saturday)
 
@@ -160,12 +160,12 @@ class RedisManager:
             return {
                 "week_start": week_key,
                 "received": {
-                    "group": int(self.client.get(f"stats:{week_key}:received:group") or 0),
-                    "private": int(self.client.get(f"stats:{week_key}:received:private") or 0)
+                    "group": int(await self.client.get(f"stats:{week_key}:received:group") or 0),
+                    "private": int(await self.client.get(f"stats:{week_key}:received:private") or 0)
                 },
                 "sent": {
-                    "group": int(self.client.get(f"stats:{week_key}:sent:group") or 0),
-                    "private": int(self.client.get(f"stats:{week_key}:sent:private") or 0)
+                    "group": int(await self.client.get(f"stats:{week_key}:sent:group") or 0),
+                    "private": int(await self.client.get(f"stats:{week_key}:sent:private") or 0)
                 }
             }
         except Exception as e:
