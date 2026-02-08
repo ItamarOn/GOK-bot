@@ -2,7 +2,7 @@ from typing import Tuple, Optional
 
 from datetime import datetime, timedelta
 import redis.asyncio as redis
-
+import redis as redis_sync
 from config import logger, REDIS_URL
 
 
@@ -21,7 +21,7 @@ class RedisManager:
                     encoding="utf-8",
                     decode_responses=True
                 )
-                self.sync_client = redis.Redis.from_url(self.redis_url, decode_responses=True)
+                self.sync_client = redis_sync.from_url(self.redis_url, decode_responses=True)
                 logger.info(f"Connected to Redis at {self.redis_url}")
         except Exception as e:
             logger.error(f"Failed to connect to Redis: {self.redis_url}")
