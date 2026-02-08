@@ -51,7 +51,9 @@ def update_weekly_status(result: dict):
         "week_start": week_key,
         "received": {
             "group": int(self.client.get(f"stats:{week_key}:received:group") or 0),
-            "private": int(self.client.get(f"stats:{week_key}:received:private") or 0)
+            "private": int(self.client.get(f"stats:{week_key}:received:private") or 0)\
+            "admin": int(self.sync_client.get(f"stats:{week_key}:received:group:admin") or 0)
+
         },
         "sent": {
             "group": int(self.client.get(f"stats:{week_key}:sent:group") or 0),
@@ -61,11 +63,12 @@ def update_weekly_status(result: dict):
     """
     msg = (
         f"📊 Weekly report for {result['week_start']}:\n"
-        "📥 Received:\n"
-        f"Groups: {result['received']['group']}\n"
-        f"Private: {result['received']['private']}\n\n"
-        "📤 Sent:\n"
-        f"Groups: {result['sent']['group']}\n"
-        f"Private: {result['sent']['private']}"
+        "🤖Bot private conversations: \n"
+        f"   - 📥 Received: {result['received']['private']}\n"
+        f"   - 📤 Sent:{result['sent']['private']}\n"
+        f"👥Messages in Groups:\n"
+        f"   - 📥 Received: {result['received']['group']}\n"
+        f"   - 📤 Sent by Bot: {result['sent']['group']}\n"
+        f"   - 📤 Sent by Admins: {result['received']['admin']}\n"
     )
     green_send_message(REPORTS_CHAT_ID, msg)
