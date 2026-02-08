@@ -110,11 +110,12 @@ class RedisManager:
         start_of_week = today - timedelta(days=days_since_sunday)
         return start_of_week.strftime("%d/%m")
 
-    def track_received_message(self, is_group: bool) -> None:
+    def track_received_message(self, is_group: bool, is_admin: bool) -> None:
         """Track incoming message statistics"""
         try:
             week_key = self._get_current_week_key()
             message_type = "group" if is_group else "private"
+            message_type += ":admin" if is_admin else ""
             redis_key = f"stats:{week_key}:received:{message_type}"
 
             incrementer = self.sync_client.incr(redis_key)
@@ -164,7 +165,8 @@ class RedisManager:
                 "week_start": week_key,
                 "received": {
                     "group": int(self.sync_client.get(f"stats:{week_key}:received:group") or 0),
-                    "private": int(self.sync_client.get(f"stats:{week_key}:received:private") or 0)
+                    "private": int(self.sync_client.get(f"stats:{week_key}:received:private") or 0),
+                    "admin": int(self.sync_client.get(f"stats:{week_key}:received:group:admin") or 0)
                 },
                 "sent": {
                     "group": int(self.sync_client.get(f"stats:{week_key}:sent:group") or 0),
