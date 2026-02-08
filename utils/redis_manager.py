@@ -112,6 +112,7 @@ class RedisManager:
 
     def track_received_message(self, is_group: bool) -> None:
         """Track incoming message statistics"""
+        logger.info(f"DELETE: track_received_message")
         try:
             week_key = self._get_current_week_key()
             message_type = "group" if is_group else "private"
@@ -120,11 +121,15 @@ class RedisManager:
             incrementer = self.sync_client.incr(redis_key)
             if incrementer == 1:
                 self.sync_client.expire(redis_key, 1209600) # 14 days in seconds
+            logger.info(f"DELETE: track_received_message<<<<<<<<>>>>>>>>>>>>>>>>>>>")
+
         except Exception as e:
             logger.info(f"Failed to track received message: {e}")
 
     def track_sent_message(self, is_group: bool) -> None:
         """Track outgoing message statistics"""
+        logger.info(f"DELETE: track_sent_message")
+
         try:
             week_key = self._get_current_week_key()
             message_type = "group" if is_group else "private"
@@ -133,11 +138,12 @@ class RedisManager:
             incrementer = self.sync_client.incr(redis_key)
             if incrementer == 1:
                 self.sync_client.expire(redis_key, 1209600)
+            logger.info(f"DELETE: track_sent_message@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
 
         except Exception as e:
             logger.info(f"Failed to track sent message: {e}")
 
-    def get_weekly_stats(self, week_offset: int = 0) -> dict:
+    async def get_weekly_stats(self, week_offset: int = 0) -> dict:
         """
         Get statistics for a specific week (Sunday to Saturday)
 
@@ -162,12 +168,12 @@ class RedisManager:
             return {
                 "week_start": week_key,
                 "received": {
-                    "group": int(self.sync_client.get(f"stats:{week_key}:received:group") or 0),
-                    "private": int(self.sync_client.get(f"stats:{week_key}:received:private") or 0)
+                    "group": int(await self.client.get(f"stats:{week_key}:received:group") or 0),
+                    "private": int(await self.client.get(f"stats:{week_key}:received:private") or 0)
                 },
                 "sent": {
-                    "group": int(self.sync_client.get(f"stats:{week_key}:sent:group") or 0),
-                    "private": int(self.sync_client.get(f"stats:{week_key}:sent:private") or 0)
+                    "group": int(await self.client.get(f"stats:{week_key}:sent:group") or 0),
+                    "private": int(await self.client.get(f"stats:{week_key}:sent:private") or 0)
                 }
             }
         except Exception as e:
