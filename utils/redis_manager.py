@@ -129,8 +129,9 @@ class RedisManager:
             message_type = "group" if is_group else "private"
             redis_key = f"stats:{week_key}:sent:{message_type}"
 
-            self.client.incr(redis_key)
-            self.client.expire(redis_key, 1209600)
+            incrementer = self.client.incr(redis_key)
+            if incrementer == 1:
+                self.client.expire(redis_key, 1209600)
 
         except Exception as e:
             logger.info(f"Failed to track sent message: {e}")
