@@ -1,7 +1,7 @@
 import requests
 
 from config import GREEN_ID, GREEN_TOKEN, ENVIRONMENT, logger
-
+from utils.redis_manager import db
 
 def green_send_message(chat_id: str, text: str, reply_to: str = None):
     prefix = "dev: \n" if ENVIRONMENT == "DEV" else ""
@@ -18,6 +18,8 @@ def green_send_message(chat_id: str, text: str, reply_to: str = None):
     response = requests.post(url, json=payload)
     if not response.ok:
         logger.error(f"Bad response from Green - payload:{payload} - response:{response}")
+
+    db.track_sent_message(is_group=chat_id.endswith("@g.us"))
 
 
 def is_green_available():
