@@ -45,3 +45,27 @@ async def report_version_update(db):
             f"New bot version: {version}"
         )
 
+def update_weekly_status(result: dict):
+    """
+    {
+        "week_start": week_key,
+        "received": {
+            "group": int(self.client.get(f"stats:{week_key}:received:group") or 0),
+            "private": int(self.client.get(f"stats:{week_key}:received:private") or 0)
+        },
+        "sent": {
+            "group": int(self.client.get(f"stats:{week_key}:sent:group") or 0),
+            "private": int(self.client.get(f"stats:{week_key}:sent:private") or 0)
+        }
+    }
+    """
+    msg = (
+        f"📊 Weekly report for {result['week_start']}:\n"
+        "📥 Received:\n"
+        f"Groups: {result['received']['group']}\n"
+        f"Private: {result['received']['private']}\n\n"
+        "📤 Sent:\n"
+        f"Groups: {result['sent']['group']}\n"
+        f"Private: {result['sent']['private']}"
+    )
+    green_send_message(REPORTS_CHAT_ID, msg)

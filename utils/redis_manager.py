@@ -1,6 +1,9 @@
 from typing import Tuple, Optional
 
+from datetime import datetime, timedelta
 import redis.asyncio as redis
+from redis.commands.search.reducers import count
+
 from config import logger, REDIS_URL
 
 
@@ -97,6 +100,82 @@ class RedisManager:
         await self.client.set(key, cur_version)
         logger.info(f"App version updated in Redis: {cur_version} (was: {previous})")
         return True, cur_version
+
+    @staticmethod
+    def _get_current_week_key() -> str:
+        """Get the current week key based on Sunday as start of week"""
+        today = datetime.now()
+        days_since_sunday = (today.weekday() + 1) % 7
+        start_of_week = today - timedelta(days=days_since_sunday)
+        return start_of_week.strftime("%m-%d")
+
+    def track_received_message(self, is_group: bool) -> None:
+        """Track incoming message statistics"""
+        try:
+            week_key = self._get_current_week_key()
+            message_type = "group" if is_group else "private"
+            redis_key = f"stats:{week_key}:received:{message_type}"
+
+            incrementer = self.client.incr(redis_key)
+            if incrementer == 1:
+                self.client.expire(redis_key, 1209600) # 14 days in seconds
+        except Exception as e:
+            logger.info(f"Failed to track received message: {e}")
+
+    def track_sent_message(self, is_group: bool) -> None:
+        """Track outgoing message statistics"""
+        try:
+            week_key = self._get_current_week_key()
+            message_type = "group" if is_group else "private"
+            redis_key = f"stats:{week_key}:sent:{message_type}"
+
+            self.client.incr(redis_key)
+            self.client.expire(redis_key, 1209600)
+
+        except Exception as e:
+            logger.info(f"Failed to track sent message: {e}")
+
+    def get_weekly_stats(self, week_offset: int = 0) -> dict:
+        """
+        Get statistics for a specific week (Sunday to Saturday)
+
+        Args:
+            week_offset: 0 for current week, 1 for last week (max 1 for free tier)
+
+        Returns:
+            Dictionary with received and sent message counts
+        """
+        try:
+            today = datetime.now()
+
+            # Calculate target date based on offset
+            target_date = today - timedelta(weeks=week_offset)
+
+            # Find the Sunday of that week
+            days_since_sunday = (target_date.weekday() + 1) % 7
+            start_of_week = target_date - timedelta(days=days_since_sunday)
+
+            week_key = start_of_week.strftime("%m-%d")
+
+            return {
+                "week_start": week_key,
+                "received": {
+                    "group": int(self.client.get(f"stats:{week_key}:received:group") or 0),
+                    "private": int(self.client.get(f"stats:{week_key}:received:private") or 0)
+                },
+                "sent": {
+                    "group": int(self.client.get(f"stats:{week_key}:sent:group") or 0),
+                    "private": int(self.client.get(f"stats:{week_key}:sent:private") or 0)
+                }
+            }
+        except Exception as e:
+            logger.error(f"Failed to get weekly stats: {e}")
+            return {
+                "week_start": "error",
+                "week_start_full": "error",
+                "received": {"group": 0, "private": 0},
+                "sent": {"group": 0, "private": 0}
+            }
 
 
 db = RedisManager()  # Singleton instance
