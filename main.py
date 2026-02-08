@@ -120,7 +120,7 @@ async def green_webhook(request: Request, background_tasks: BackgroundTasks):
 
     is_group = whatsapp_request.get("senderData", {}).get("chatId", "").endswith("@g.us")
     is_mate = whatsapp_request.get("senderData", {}).get('sender', '').split('@')[0] in MATES
-    db.track_received_message(is_group=is_group, is_admins=is_mate)
+    db.track_received_message(is_group=is_group, is_admin=is_mate)
 
     # Group Chat logic:
     if "@g.us" in whatsapp_request["senderData"].get("chatId", ""):
