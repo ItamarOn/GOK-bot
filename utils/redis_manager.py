@@ -2,7 +2,6 @@ from typing import Tuple, Optional
 
 from datetime import datetime, timedelta
 import redis.asyncio as redis
-from redis.commands.search.reducers import count
 
 from config import logger, REDIS_URL
 
