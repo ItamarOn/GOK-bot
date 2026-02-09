@@ -2,7 +2,7 @@ from config import REPORTS_CHAT_ID, tz_info, RENDER_GIT_COMMIT, SERVER_PROVIDER,
 from core.message import green_send_message
 from datetime import datetime
 
-def report_new_user_startup(whatsapp_request):
+async def report_new_user_startup(whatsapp_request):
     time_now = datetime.now(tz_info).strftime("%H:%M %d/%m")
     s = whatsapp_request['senderData']
     m = whatsapp_request['messageData']
@@ -10,7 +10,7 @@ def report_new_user_startup(whatsapp_request):
             m.get('fileMessageData', {}).get('mimeType', '') or
             m.get('extendedTextMessageData', {}).get('text', '') or
             'unextractable')
-    green_send_message(
+    await green_send_message(
         REPORTS_CHAT_ID,
         f"({time_now}) new chat started.\n"
         f"user whatsapp's name: `{s['senderName']}` from number {s['sender'].split('@')[0]}\n"
@@ -18,19 +18,19 @@ def report_new_user_startup(whatsapp_request):
     )
     return text
 
-def report_quoted_response(whatsapp_request):
+async def report_quoted_response(whatsapp_request):
     s = whatsapp_request['senderData']
     m = whatsapp_request['messageData']
-    green_send_message(
+    await green_send_message(
         REPORTS_CHAT_ID,
         f"User: `{s['senderName']}` ({s['sender'].split('@')[0]}) quote bot group message and wrote: "
         f"`{m.get('extendedTextMessageData', {}).get('text', '')}"
     )
 
-def report_bug_request(whatsapp_request):
+async def report_bug_request(whatsapp_request):
     s = whatsapp_request['senderData']
     m = whatsapp_request['messageData']
-    green_send_message(
+    await green_send_message(
         REPORTS_CHAT_ID,
         f"Bug reported by `{s['senderName']}` ({s['sender'].split('@')[0]}), the message is:\n"
         f"`{m.get('textMessageData', {}).get('textMessage', '')}`"
@@ -41,12 +41,12 @@ async def report_version_update(db):
 
     is_change, version = await db.sync_app_version(cur_version[:7])
     if is_change:
-        green_send_message(
+        await green_send_message(
             REPORTS_CHAT_ID,
             f"New bot version: {version}"
         )
 
-def update_weekly_status(result: dict):
+async def update_weekly_status(result: dict):
     """
     {
         "week_start": week_key,
@@ -72,4 +72,4 @@ def update_weekly_status(result: dict):
         f"   - 📤 Sent by Bot: {result['sent']['group']}\n"
         f"   - 📤 Sent by Admins: {result['received']['admin']}\n"
     )
-    green_send_message(REPORTS_CHAT_ID, msg)
+    await green_send_message(REPORTS_CHAT_ID, msg)

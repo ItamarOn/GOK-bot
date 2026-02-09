@@ -29,7 +29,7 @@ async def lifespan(app: FastAPI):
     """Handle startup and shutdown lifecycle for FastAPI"""
     await db.connect()
     logger.info("Redis connected successfully")
-    update_admin_startup()
+    await update_admin_startup()
     await report_version_update(db)
     yield
     if db.client:
