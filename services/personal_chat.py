@@ -24,8 +24,8 @@ async def personal_chat_handler(whatsapp_request: dict):
     sender_digits = "".join(c for c in sender if c.isdigit())
     number_of_requests = await db.increment_counter(sender_digits)
     if number_of_requests == 1:
-        text = report_new_user_startup(whatsapp_request)
-        green_send_message(sender, TEXTS["welcome"] + TEXTS["bug"]["bug_report"])
+        text = await report_new_user_startup(whatsapp_request)
+        await green_send_message(sender, TEXTS["welcome"] + TEXTS["bug"]["bug_report"])
         # ignore duplicate, ignore green api signs (sometimes '{{SWE001}}' is first message)
         if text in HELP_KEYWORDS or '{' in text:
             return {"status": "new_user_thanks_sent"}
@@ -36,7 +36,7 @@ async def personal_chat_handler(whatsapp_request: dict):
 
         # analyze image
         result = check_barcode(image_url)
-        green_send_message(sender, result, reply_to=msg_id)
+        await green_send_message(sender, result, reply_to=msg_id)
         return {"status": "image_processed"}
 
     # quoted message
@@ -44,34 +44,34 @@ async def personal_chat_handler(whatsapp_request: dict):
         quoted = msg_data.get('quotedMessage', {}).get('textMessage', '')
         if any(term in quoted for term in TEXTS["group"].values()):
             logger.info(f"User {sender} replied to group message")
-            report_quoted_response(whatsapp_request)
+            await report_quoted_response(whatsapp_request)
             return {"status": "quoted message reported"}
 
     # text
     if msg_type == "textMessage":
         text = msg_data["textMessageData"]["textMessage"].lower().strip()
         if text.startswith(TEXTS["bug"]['prefix']):
-            report_bug_request(whatsapp_request)
-            green_send_message(sender, TEXTS["bug"]["acknowledgement"])
+            await report_bug_request(whatsapp_request)
+            await green_send_message(sender, TEXTS["bug"]["acknowledgement"])
             return {"status": "bug_reported"}
         if text in HELP_KEYWORDS:
             logger.info(f"Help message requested from {sender}")
-            green_send_message(sender, TEXTS["welcome"])
+            await green_send_message(sender, TEXTS["welcome"])
             return {"status": "help_sent"}
 
         digits = "".join(c for c in text if c.isdigit())
         if digits:
             result = check_barcode(digits, text=True)
-            green_send_message(sender, result, reply_to=msg_id)
+            await green_send_message(sender, result, reply_to=msg_id)
         elif any(keyword in text for keyword in THANKS_KEYWORDS):
-            green_send_message(sender, TEXTS["thanks"], reply_to=msg_id)
+            await green_send_message(sender, TEXTS["thanks"], reply_to=msg_id)
         else:
-            green_send_message(sender, TEXTS["errors"]["invalid_message"], reply_to=msg_id)
+            await green_send_message(sender, TEXTS["errors"]["invalid_message"], reply_to=msg_id)
 
         return {"status": "text_processed"}
 
     # all the rest
-    green_send_message(
+    await green_send_message(
         sender,
         TEXTS["errors"]["unsupported_type"],
         reply_to=msg_id

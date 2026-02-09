@@ -7,14 +7,14 @@ import random
 GIT_SHA = RENDER_GIT_COMMIT if SERVER_PROVIDER == "render" else APP_GIT_SHA
 
 
-def update_admin_startup():
+async def update_admin_startup():
     if is_green_available():
         logger.info('Green API is available - sending startup message to admin.')
     else:
         logger.error('Green API is not available')
     time_now = datetime.now(tz_info).strftime("%H:%M %d/%m")
     try:
-        green_send_message(
+        await green_send_message(
             ADMIN_CHAT_ID,
             f"🟢Bot has been started ({time_now}).\n\n"
             f"Environment: {ENVIRONMENT}\n"
@@ -43,6 +43,6 @@ async def update_admin_shutdown(db):
                 "\nRemember! "
                 "some messages are in logs but not delivered to the user because we are using free *1 worker* program!"
             )
-        green_send_message(ADMIN_CHAT_ID, message)
+        await green_send_message(ADMIN_CHAT_ID, message)
     except:
         logger.exception("Failed to send shutdown message to admin.")

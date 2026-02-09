@@ -29,7 +29,7 @@ async def group_handler(whatsapp_request: dict):
     if is_night_hours(timestamp) and actual_sender != ADMIN_CHAT_ID:
         logger.info(f'Now is night hours. Got: {group_name}:{actual_sender}')
         if not await db.is_duplicate('night', f'{chat_id}', ttl_seconds=3600):
-            return night_response(sender_data, msg_id, actual_sender, group_name)
+            return await night_response(sender_data, msg_id, actual_sender, group_name)
         logger.info(f"Night hours - duplicate message ignored: {actual_sender} in {group_name} / {chat_id}")
         return {"status": "group_outside_hours_many_messages"}
 
@@ -54,18 +54,18 @@ async def group_handler(whatsapp_request: dict):
             logger.info(f"Group image barcode not found in GOK: {msg_id} from {actual_sender} in {group_name}")
             barcode_or_barcodes_list = "".join(c for c in result if c.isdigit() or c == '\n')
             unlisted_msg = barcode_or_barcodes_list + TEXTS['group']['unlisted']
-            green_send_message(sender_data["chatId"], unlisted_msg, reply_to=msg_id)
+            await green_send_message(sender_data["chatId"], unlisted_msg, reply_to=msg_id)
             return {"status": "group_unlisted"}
 
         if any(sign in result for sign in LISTED_SIGNS):
             logger.info(f"Group image with status: {msg_id} from {actual_sender} in {group_name}")
-            green_send_message(sender_data["chatId"], TEXTS['group']['listed'], reply_to=msg_id)
+            await green_send_message(sender_data["chatId"], TEXTS['group']['listed'], reply_to=msg_id)
             return {"status": "group_listed"}
 
     return {"status": "group_ignored"}
 
 
-def night_response(sender_data, msg_id, actual_sender, group_name):
+async def night_response(sender_data, msg_id, actual_sender, group_name):
     logger.info(f"Outside working hours - ignoring group message {msg_id} from {actual_sender} in {group_name}")
-    green_send_message(sender_data["chatId"], TEXTS["errors"]["out_of_working_hours"], reply_to=msg_id)
+    await green_send_message(sender_data["chatId"], TEXTS["errors"]["out_of_working_hours"], reply_to=msg_id)
     return {"status": "group_outside_hours"}

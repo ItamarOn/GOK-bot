@@ -1,9 +1,10 @@
 import requests
+import asyncio
 
 from config import GREEN_ID, GREEN_TOKEN, ENVIRONMENT, logger
 from utils.redis_manager import db
 
-def green_send_message(chat_id: str, text: str, reply_to: str = None):
+async def green_send_message(chat_id: str, text: str, reply_to: str = None):
     prefix = "dev: \n" if ENVIRONMENT == "DEV" else ""
     url = f"https://api.green-api.com/waInstance{GREEN_ID}/sendMessage/{GREEN_TOKEN}"
     payload = {
@@ -15,10 +16,14 @@ def green_send_message(chat_id: str, text: str, reply_to: str = None):
 
     logger.info(f"Response: {payload}")
 
-    response = requests.post(url, json=payload)
+    def _send():
+        return requests.post(url, json=payload, timeout=30)
+
+    response = await asyncio.to_thread(_send)
+
     if not response.ok:
         logger.error(f"Bad response from Green - payload:{payload} - response:{response}")
-        
+
     logger.info(f"status_code: {response.status_code}, response: {response.text}")
     db.track_sent_message(is_group=chat_id.endswith("@g.us")) # without await
 
