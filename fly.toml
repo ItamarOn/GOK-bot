@@ -1,0 +1,27 @@
+# fly.toml app configuration file generated for gok-bot on 2026-02-09T22:01:46+02:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+# Deploy command: `fly deploy --build-arg GIT_SHA=$(git rev-parse HEAD) --app gok-bot`
+#
+
+app = 'gok-bot'
+primary_region = 'fra'
+
+[build]
+
+[processes]
+  app = "gunicorn -k uvicorn.workers.UvicornWorker main:app --bind 0.0.0.0:8080 --timeout 60"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
+[[vm]]
+  memory = '1gb'
+  cpus = 1
+  memory_mb = 1024
