@@ -70,5 +70,20 @@ ngrok http 8000
 
 For production:
 
-Check [Render.com deployment guide](https://render.com/docs/deploys) for more details.
+Old deploy: [Render.com deployment guide](https://render.com/docs/deploys) for more details.
+
+New deploy: [Fly.io](https://fly.io/). The deployment is from the root of the project:
+
+```bash
+# brew install flyctl  # only for install
+# fly auth login  # only for install
+# fly launch  # only for create new app after install
+fly secrets set X=123 # set env vars
+fly secrets list
+fly machines list
+fly deploy --build-arg GIT_SHA=$(git rev-parse HEAD) --app gok-bot
+fly ssh console --app gok-bot
+fly logs
+```
+
 
