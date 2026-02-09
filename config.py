@@ -42,6 +42,14 @@ WORKING_HOURS = os.getenv("WORKING_HOURS", "7,22")  # 7 AM to 10 PM
 MATES = set(phone.strip() for phone in os.getenv('MATES', '').split(','))
 
 RENDER_GIT_COMMIT = os.getenv("RENDER_GIT_COMMIT", "unknown/dev")
+APP_GIT_SHA = os.getenv("APP_GIT_SHA", "unknown/dev")
+
+SERVER_PROVIDER = "local"
+if os.getenv("FLY_APP_NAME") or os.getenv("FLY_MACHINE_ID"):
+    SERVER_PROVIDER = "fly"
+if os.getenv("RENDER_GIT_COMMIT") or os.getenv("RENDER"):
+    SERVER_PROVIDER = "render"
+
 
 if not GREEN_ID or not GREEN_TOKEN or not GOK_API_TOKEN or not WHITE_IP:
     raise RuntimeError("Missing credentials — check .env or Render Environment settings.")
