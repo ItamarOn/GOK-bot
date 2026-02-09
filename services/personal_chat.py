@@ -36,7 +36,7 @@ async def personal_chat_handler(whatsapp_request: dict):
 
         # analyze image
         result = check_barcode(image_url)
-        await green_send_message(sender, result, reply_to=msg_id)
+        await green_send_message(sender, result)  #, reply_to=msg_id)
         return {"status": "image_processed"}
 
     # quoted message
