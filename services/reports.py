@@ -1,4 +1,4 @@
-from config import REPORTS_CHAT_ID, tz_info, RENDER_GIT_COMMIT
+from config import REPORTS_CHAT_ID, tz_info, RENDER_GIT_COMMIT, SERVER_PROVIDER, APP_GIT_SHA
 from core.message import green_send_message
 from datetime import datetime
 
@@ -37,8 +37,9 @@ def report_bug_request(whatsapp_request):
     )
 
 async def report_version_update(db):
-    cur_version = RENDER_GIT_COMMIT[:7]
-    is_change, version = await db.sync_app_version(cur_version)
+    cur_version = RENDER_GIT_COMMIT if SERVER_PROVIDER == "render" else APP_GIT_SHA
+
+    is_change, version = await db.sync_app_version(cur_version[:7])
     if is_change:
         green_send_message(
             REPORTS_CHAT_ID,
