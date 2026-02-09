@@ -18,7 +18,8 @@ def green_send_message(chat_id: str, text: str, reply_to: str = None):
     response = requests.post(url, json=payload)
     if not response.ok:
         logger.error(f"Bad response from Green - payload:{payload} - response:{response}")
-
+        
+    logger.info(f"status_code: {response.status_code}, response: {response.text}")
     db.track_sent_message(is_group=chat_id.endswith("@g.us")) # without await
 
 
