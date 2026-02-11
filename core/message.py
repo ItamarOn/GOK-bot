@@ -25,7 +25,7 @@ async def green_send_message(chat_id: str, text: str, reply_to: str = None):
         logger.error(f"Bad response from Green - payload:{payload} - response:{response}")
 
     logger.info(f"status_code: {response.status_code}, response: {response.text}")
-    db.track_sent_message(is_group=chat_id.endswith("@g.us")) # without await
+    await db.track_sent_message(is_group=chat_id.endswith("@g.us"))
 
 
 def is_green_available():

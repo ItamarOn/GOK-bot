@@ -2,7 +2,6 @@ from typing import Tuple, Optional
 
 from datetime import datetime, timedelta
 import redis.asyncio as redis
-import redis as redis_sync
 from config import logger, REDIS_URL
 
 
@@ -10,7 +9,6 @@ class RedisManager:
     def __init__(self):
         self.redis_url = REDIS_URL
         self.client = None
-        self.sync_client = None
 
     async def connect(self):
         """Establish connection to Redis once (called on startup)"""
@@ -21,8 +19,7 @@ class RedisManager:
                     encoding="utf-8",
                     decode_responses=True
                 )
-                self.sync_client = redis_sync.from_url(self.redis_url, decode_responses=True)
-                logger.info(f"Connected to Redis at {self.redis_url}")
+            logger.info(f"Connected to Redis at {self.redis_url}")
         except Exception as e:
             logger.error(f"Failed to connect to Redis: {self.redis_url}")
             raise
@@ -45,17 +42,6 @@ class RedisManager:
         was_set = await self.client.set(key, "1", ex=ttl_seconds, nx=True)
         if not was_set:
             logger.info(f"Duplicate detected for {key}")
-            return True
-        return False
-
-    async def is_n_duplicate(self, identifier: str, ttl_seconds: int = 86400, n: int = 3) -> bool:
-        """Checks if an identifier has been seen more than n times within TTL."""
-        await self._ensure_connection()
-        key = f"dup-n:{identifier}"
-        new_value = await self.client.incr(key)
-        if new_value == 1:
-            await self.client.expire(key, ttl_seconds)
-        if new_value > n:
             return True
         return False
 
@@ -110,77 +96,86 @@ class RedisManager:
         start_of_week = today - timedelta(days=days_since_sunday)
         return start_of_week.strftime("%d/%m")
 
-    def track_received_message(self, is_group: bool, is_admin: bool) -> None:
-        """Track incoming message statistics"""
+    async def track_received_message(self, is_group: bool, is_admin: bool, failed_received: bool = False) -> None:
+        """Track incoming message statistics (async)"""
         try:
             week_key = self._get_current_week_key()
             message_type = "group" if is_group else "private"
             message_type += ":admin" if is_admin else ""
-            redis_key = f"stats:{week_key}:received:{message_type}"
+            status = "failed_received" if failed_received else "received"
+            redis_key = f"stats:{week_key}:{status}:{message_type}"
 
-            incrementer = self.sync_client.incr(redis_key)
-            if incrementer == 1:
-                self.sync_client.expire(redis_key, 1209600) # 14 days in seconds
+            async with self.client.pipeline(transaction=True) as pipe:
+                pipe.incr(redis_key)
+                pipe.expire(redis_key, 1209600, nx=True) # nx to set ttl only on the first increment. 14 days = 1209600
+                await pipe.execute()
 
         except Exception as e:
             logger.info(f"Failed to track received message: {e}")
 
-    def track_sent_message(self, is_group: bool) -> None:
-        """Track outgoing message statistics"""
+    async def track_sent_message(self, is_group: bool) -> None:
+        """Track outgoing message statistics (async)"""
         try:
             week_key = self._get_current_week_key()
             message_type = "group" if is_group else "private"
             redis_key = f"stats:{week_key}:sent:{message_type}"
 
-            incrementer = self.sync_client.incr(redis_key)
-            if incrementer == 1:
-                self.sync_client.expire(redis_key, 1209600)
+            async with self.client.pipeline(transaction=True) as pipe:
+                pipe.incr(redis_key)
+                pipe.expire(redis_key, 1209600, nx=True) # nx to set ttl only on the first increment. 14 days = 1209600
+                await pipe.execute()
 
         except Exception as e:
             logger.info(f"Failed to track sent message: {e}")
 
-    def get_weekly_stats(self, week_offset: int = 0) -> dict:
-        """
-        Get statistics for a specific week (Sunday to Saturday)
+    async def get_weekly_stats(self, week_offset: int = 0) -> dict:
+         """ Get statistics for a specific week (Sunday to Saturday) """
+         try:
+             today = datetime.now()
 
-        Args:
-            week_offset: 0 for current week, 1 for last week (max 1 for free tier)
+             # Calculate target date based on offset
+             target_date = today - timedelta(weeks=week_offset)
 
-        Returns:
-            Dictionary with received and sent message counts
-        """
-        try:
-            today = datetime.now()
+             # Find the Sunday of that week
+             days_since_sunday = (target_date.weekday() + 1) % 7
+             start_of_week = target_date - timedelta(days=days_since_sunday)
+             week_key = start_of_week.strftime("%d/%m")
 
-            # Calculate target date based on offset
-            target_date = today - timedelta(weeks=week_offset)
+             # Single hit to redis (Counts as 1 request)
+             keys = [
+                 f"stats:{week_key}:received:group",
+                 f"stats:{week_key}:received:private",
+                 f"stats:{week_key}:received:group:admin",
+                 f"stats:{week_key}:sent:group",
+                 f"stats:{week_key}:sent:private",
+                 f"stats:{week_key}:failed_received:group",
+                 f"stats:{week_key}:failed_received:private"
+             ]
+             raw_results = await self.client.mget(*keys)
+             data = [int(val or 0) for val in raw_results]
 
-            # Find the Sunday of that week
-            days_since_sunday = (target_date.weekday() + 1) % 7
-            start_of_week = target_date - timedelta(days=days_since_sunday)
-
-            week_key = start_of_week.strftime("%d/%m")
-
-            return {
-                "week_start": week_key,
-                "received": {
-                    "group": int(self.sync_client.get(f"stats:{week_key}:received:group") or 0),
-                    "private": int(self.sync_client.get(f"stats:{week_key}:received:private") or 0),
-                    "admin": int(self.sync_client.get(f"stats:{week_key}:received:group:admin") or 0)
-                },
-                "sent": {
-                    "group": int(self.sync_client.get(f"stats:{week_key}:sent:group") or 0),
-                    "private": int(self.sync_client.get(f"stats:{week_key}:sent:private") or 0)
-                }
-            }
-        except Exception as e:
-            logger.error(f"Failed to get weekly stats: {e}")
-            return {
-                "week_start": "error",
-                "week_start_full": "error",
-                "received": {"group": 0, "private": 0},
-                "sent": {"group": 0, "private": 0}
-            }
+             return {
+                 "week_start": week_key,
+                 "received": {
+                    "group": data[0],
+                    "private": data[1],
+                    "admin": data[2],
+                 },
+                 "sent": {
+                    "group": data[3],
+                    "private": data[4],
+                    "failed_group": data[5],
+                    "failed_private": data[6],
+                 }
+             }
+         except Exception as e:
+             logger.error(f"Failed to get weekly stats: {e}")
+             return {
+                 "week_start": "error",
+                 "week_start_full": "error",
+                 "received": {"group": 0, "private": 0, "admin": 0},
+                 "sent": {"group": 0, "private": 0, "failed_group": 0, "failed_private": 0},
+             }
 
 
 db = RedisManager()  # Singleton instance
