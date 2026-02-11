@@ -66,10 +66,10 @@ async def update_weekly_status(result: dict):
         f"📊 Weekly report for {result['week_start']}:\n"
         "🤖Bot private conversations: \n"
         f"   - 📥 Received: {result['received']['private']}\n"
-        f"   - 📤 Sent:{result['sent']['private']}\n"
+        f"   - 📤 Sent:{result['sent']['private']} (Failed: {result['sent']['failed_private']})\n"
         f"👥Messages in Groups:\n"
         f"   - 📥 Received: {result['received']['group']}\n"
-        f"   - 📤 Sent by Bot: {result['sent']['group']}\n"
+        f"   - 📤 Sent by Bot: {result['sent']['group']} (Failed: {result['sent']['failed_group']})\n"
         f"   - 📤 Sent by Admins: {result['received']['admin']}\n"
     )
     await green_send_message(REPORTS_CHAT_ID, msg)
