@@ -96,7 +96,7 @@ class RedisManager:
         start_of_week = today - timedelta(days=days_since_sunday)
         return start_of_week.strftime("%d/%m")
 
-    async def track_received_message(self, is_group: bool, is_admin: bool, failed_received: bool = False) -> None:
+    async def track_received_message(self, is_group: bool, is_admin: bool = False, failed_received: bool = False) -> None:
         """Track incoming message statistics (async)"""
         try:
             week_key = self._get_current_week_key()
