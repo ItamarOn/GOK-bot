@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, BackgroundTasks, HTTPException, Depends, status
 from fastapi.security import APIKeyHeader
 
-from config import logger, ADMIN_SECRET_TOKEN, MATES
+from config import logger, ADMIN_SECRET_TOKEN, MATES, ADMIN_CHAT_ID
 from services.admin import update_admin_startup, update_admin_shutdown
 from services.reports import report_version_update, update_weekly_status
 from services.group import group_handler
@@ -26,7 +26,6 @@ async def verify_admin(api_key: str = Depends(api_key_header)):
 async def lifespan(app: FastAPI):
     """Startup/shutdown lifecycle: connect Redis and run admin/report updates."""
     await db.connect()
-    logger.info("Redis connected successfully")
     await update_admin_startup()
     await report_version_update(db)
     yield

@@ -12,7 +12,7 @@ async def report_new_user_startup(whatsapp_request):
             'unextractable')
     await green_send_message(
         REPORTS_CHAT_ID,
-        f"({time_now}) new chat started.\n"
+        f"🆕({time_now}) new chat started.\n"
         f"user whatsapp's name: `{s['senderName']}` from number {s['sender'].split('@')[0]}\n"
         f"the message is : `{text}`"
     )
@@ -23,7 +23,7 @@ async def report_quoted_response(whatsapp_request):
     m = whatsapp_request['messageData']
     await green_send_message(
         REPORTS_CHAT_ID,
-        f"User: `{s['senderName']}` ({s['sender'].split('@')[0]}) quote bot group message and wrote: "
+        f"💬User: `{s['senderName']}` ({s['sender'].split('@')[0]}) quote bot group message and wrote: "
         f"`{m.get('extendedTextMessageData', {}).get('text', '')}"
     )
 
@@ -32,7 +32,7 @@ async def report_bug_request(whatsapp_request):
     m = whatsapp_request['messageData']
     await green_send_message(
         REPORTS_CHAT_ID,
-        f"Bug reported by `{s['senderName']}` ({s['sender'].split('@')[0]}), the message is:\n"
+        f"🐞Bug reported by `{s['senderName']}` ({s['sender'].split('@')[0]}), the message is:\n"
         f"`{m.get('textMessageData', {}).get('textMessage', '')}`"
     )
 
@@ -43,7 +43,7 @@ async def report_version_update(db):
     if is_change:
         await green_send_message(
             REPORTS_CHAT_ID,
-            f"New bot version: {version}"
+            f"🚀 New bot version: {version}"
         )
 
 async def update_weekly_status(result: dict):
