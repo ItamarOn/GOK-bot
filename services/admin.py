@@ -16,11 +16,7 @@ async def update_admin_startup():
     try:
         await green_send_message(
             ADMIN_CHAT_ID,
-            f"🟢Bot has been started ({time_now}).\n\n"
-            f"Environment: {ENVIRONMENT}\n"
-            f"Version: {GIT_SHA[:7]}\n"
-            f"hostname: {socket.gethostname()}\n"
-            f"provider: {SERVER_PROVIDER}\n"
+            f"🟢Activated ({time_now}) {ENVIRONMENT} {GIT_SHA[:7]} {SERVER_PROVIDER}"
         )
     except:
         logger.exception("Failed to send startup message to admin.")
@@ -33,16 +29,11 @@ async def update_admin_shutdown(db):
         # number_of_personal_chats = await db.count_keys('co:')
 
         message = (
-            f"🔴Bot is shutting down. ({ENVIRONMENT}-{SERVER_PROVIDER}) on {socket.gethostname()[:5]}\n\n"
-            f"Last 24h processed messages:\n"
-            f"  - Group: {group_msg_last_24h_count}\n"
-            f"  - Personal: {personal_msg_last_24h_count}\n"
+            f"🔴Sleeping ({ENVIRONMENT}-{SERVER_PROVIDER})"
+            # f"Last 24h processed messages:\n"
+            # f"  - Group: {group_msg_last_24h_count}\n"
+            # f"  - Personal: {personal_msg_last_24h_count}\n"
         )
-        if random.randint(1, 6) == 5:
-            message += (
-                "\nRemember! "
-                "some messages are in logs but not delivered to the user because we are using free *1 worker* program!"
-            )
         await green_send_message(ADMIN_CHAT_ID, message)
     except:
         logger.exception("Failed to send shutdown message to admin.")
