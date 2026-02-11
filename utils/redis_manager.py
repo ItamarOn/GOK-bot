@@ -129,15 +129,7 @@ class RedisManager:
             logger.info(f"Failed to track sent message: {e}")
 
     async def get_weekly_stats(self, week_offset: int = 0) -> dict:
-         """
-         Get statistics for a specific week (Sunday to Saturday)
-
-         Args:
-             week_offset: 0 for current week, 1 for last week (max 1 for free tier)
-
-         Returns:
-             Dictionary with received and sent message counts
-         """
+         """ Get statistics for a specific week (Sunday to Saturday) """
          try:
              today = datetime.now()
 
@@ -181,8 +173,8 @@ class RedisManager:
              return {
                  "week_start": "error",
                  "week_start_full": "error",
-                 "received": {"group": 0, "private": 0},
-                 "sent": {"group": 0, "private": 0}
+                 "received": {"group": 0, "private": 0, "admin": 0},
+                 "sent": {"group": 0, "private": 0, "failed_group": 0, "failed_private": 0},
              }
 
 
