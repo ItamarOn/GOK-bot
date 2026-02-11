@@ -69,5 +69,6 @@ GOK_STATUS = {
 }
 
 LISTED_SIGNS = [ "✅", "❌", "🚫"]
+ADMIN_SIGNS = ["🟢", "🔴", "🆕", "💬", "🐞", "🚀", "📊",]
 HELP_KEYWORDS = ["hi", "hello", "hey", "שלום", "היי", "הי", "start", "help", "עזרה"]
-THANKS_KEYWORDS = ["thank", "tnx", "תודה", "אשריך"]
+THANKS_KEYWORDS = ["thank", "tnx", "תודה", "אשריך", "🙏", "👍"]

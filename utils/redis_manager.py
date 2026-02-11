@@ -19,7 +19,7 @@ class RedisManager:
                     encoding="utf-8",
                     decode_responses=True
                 )
-            logger.info(f"Connected to Redis at {self.redis_url}")
+            logger.info("Redis connected successfully")
         except Exception as e:
             logger.error(f"Failed to connect to Redis: {self.redis_url}")
             raise

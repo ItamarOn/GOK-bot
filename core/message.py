@@ -3,6 +3,7 @@ import asyncio
 
 from config import GREEN_ID, GREEN_TOKEN, ENVIRONMENT, logger
 from utils.redis_manager import db
+from utils.texts import ADMIN_SIGNS
 
 async def green_send_message(chat_id: str, text: str, reply_to: str = None):
     prefix = "dev: \n" if ENVIRONMENT == "DEV" else ""
@@ -25,7 +26,8 @@ async def green_send_message(chat_id: str, text: str, reply_to: str = None):
         logger.error(f"Bad response from Green - payload:{payload} - response:{response}")
 
     logger.info(f"status_code: {response.status_code}, response: {response.text}")
-    await db.track_sent_message(is_group=chat_id.endswith("@g.us"))
+    if text[0] not in ADMIN_SIGNS:
+        await db.track_sent_message(is_group=chat_id.endswith("@g.us"))
 
 
 def is_green_available():
