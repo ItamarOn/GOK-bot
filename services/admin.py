@@ -24,10 +24,8 @@ async def update_admin_startup():
 
 async def update_admin_shutdown(db):
     try:
-        group_msg_last_24h_count = await db.count_keys('dup:msg-g:*')
-        personal_msg_last_24h_count = await db.count_keys('dup:msg-p:*')
-        # number_of_personal_chats = await db.count_keys('co:')
-
+        # group_msg_last_24h_count = await db.count_keys('dup:msg-g:*')
+        # personal_msg_last_24h_count = await db.count_keys('dup:msg-p:*')
         message = (
             f"🔴Sleeping ({ENVIRONMENT}-{SERVER_PROVIDER})"
             # f"Last 24h processed messages:\n"
