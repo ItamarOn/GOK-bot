@@ -13,8 +13,9 @@ async def report_new_user_startup(whatsapp_request):
     await green_send_message(
         REPORTS_CHAT_ID,
         f"🆕({time_now}) new chat started.\n"
-        f"user whatsapp's name: `{s['senderName']}` from number {s['sender'].split('@')[0]}\n"
-        f"the message is : `{text}`"
+        f"User whatsapp's name: '{s['senderName']}'\n"
+        f"Number: {s['sender'].split('@')[0]}\n"
+        f"Message: `{text}`"
     )
     return text
 
@@ -23,8 +24,8 @@ async def report_quoted_response(whatsapp_request):
     m = whatsapp_request['messageData']
     await green_send_message(
         REPORTS_CHAT_ID,
-        f"💬User: `{s['senderName']}` ({s['sender'].split('@')[0]}) quote bot group message and wrote: "
-        f"`{m.get('extendedTextMessageData', {}).get('text', '')}"
+        f"💬User: '{s['senderName']}' ({s['sender'].split('@')[0]}) quote bot group message and wrote:\n"
+        f"`{m.get('extendedTextMessageData', {}).get('text', '')}`"
     )
 
 async def report_bug_request(whatsapp_request):
@@ -32,7 +33,7 @@ async def report_bug_request(whatsapp_request):
     m = whatsapp_request['messageData']
     await green_send_message(
         REPORTS_CHAT_ID,
-        f"🐞Bug reported by `{s['senderName']}` ({s['sender'].split('@')[0]}), the message is:\n"
+        f"🐞Bug reported by '{s['senderName']}' ({s['sender'].split('@')[0]}), the message is:\n"
         f"`{m.get('textMessageData', {}).get('textMessage', '')}`"
     )
 
@@ -63,10 +64,10 @@ async def update_weekly_status(result: dict):
     }
     """
     msg = (
-        f"📊 Weekly report for {result['week_start']}:\n"
+        f"📊 Weekly report from {result['week_start']}:\n\n"
         "🤖Bot private conversations: \n"
         f"   - 📥 Received: {result['received']['private']}\n"
-        f"   - 📤 Sent:{result['sent']['private']} (Failed: {result['sent']['failed_private']})\n"
+        f"   - 📤 Sent:{result['sent']['private']} (Failed/Delayed: {result['sent']['failed_private']})\n\n"
         f"👥Messages in Groups:\n"
         f"   - 📥 Received: {result['received']['group']}\n"
         f"   - 📤 Sent by Bot: {result['sent']['group']} (Failed: {result['sent']['failed_group']})\n"
