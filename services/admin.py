@@ -16,7 +16,7 @@ async def update_admin_startup():
     try:
         await green_send_message(
             ADMIN_CHAT_ID,
-            f"🟢Activated ({time_now}) {ENVIRONMENT} {GIT_SHA[:7]} {SERVER_PROVIDER}"
+            f"🟢Active {ENVIRONMENT} {GIT_SHA[:7]} {SERVER_PROVIDER} ({time_now})"
         )
     except:
         logger.exception("Failed to send startup message to admin.")
@@ -27,7 +27,7 @@ async def update_admin_shutdown(db):
         # group_msg_last_24h_count = await db.count_keys('dup:msg-g:*')
         # personal_msg_last_24h_count = await db.count_keys('dup:msg-p:*')
         message = (
-            f"🔴Sleeping ({ENVIRONMENT}-{SERVER_PROVIDER})"
+            f"🔴Sleep ({ENVIRONMENT}-{SERVER_PROVIDER})"
             # f"Last 24h processed messages:\n"
             # f"  - Group: {group_msg_last_24h_count}\n"
             # f"  - Personal: {personal_msg_last_24h_count}\n"

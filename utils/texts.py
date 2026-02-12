@@ -22,8 +22,8 @@ TEXTS = {
     },
     "errors": {
         "image_processing": "בעיה בעיבוד התמונה🔄\n נסו לשנות זווית או לחתוך רק את הברקוד",
-        "unsupported_type": "סוג הודעה לא נתמך. נא לשלוח תמונה עם ברקוד או טקסט עם ספרות ברקוד.",
-        "invalid_message": "הודעה לא קבילה. נא לשלוח תמונה עם ברקוד או טקסט עם ספרות ברקוד.",
+        "unsupported_type": "סוג הודעה לא נתמך. נא לשלוח תמונה עם ברקוד או טקסט של ספרות ברקוד.",
+        "invalid_message": "נא לשלוח תמונה עם ברקוד או טקסט של ספרות ברקוד.",
         "exception": "שגיאה פנימית בטיפול בבקשה. אנא נסה שוב מאוחר יותר.",
         "barcode_not_found": "🙄 קשה לי לחלץ את הברקוד. נסו לחתוך רק את הברקוד או לשנות זווית ותאורה."
                              " או פשוט הקלידו את הספרות",
