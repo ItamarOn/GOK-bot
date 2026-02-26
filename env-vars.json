@@ -1,0 +1,15 @@
+{
+  "Variables": {
+    "UPSTASH_REDIS_URL": "redis://default:Abf9AAIncDJjZjM0YmYxYTMzNGM0MDdhYTBjMzgzNDJmMmFlNmM3NXAyNDcxMDE@star-mosquito-47101.upstash.io:6379",
+    "GREEN_ID": "7105398750",
+    "GREEN_TOKEN": "94903acc35c04d7ca8c6f93dbe6bd5299ed97a9f65b34b709a",
+    "GOK_API_TOKEN": "Bearer fNj1TSt4FvowceeF6di8w5JRkRqUIW9D",
+    "WHITE_IP": "85.64.239.97",
+    "ADMIN_CHAT_ID": "972547271571@c.us",
+    "ADMIN_SECRET_TOKEN": "ITAMAR_m4iOiJzdGFjay0xNDkzNjQzLW90bHAtd3JpdGUtbG9ncy1vZC1nb2si_ADMIN",
+    "REPORTS_CHAT_ID": "120363406797759840@g.us",
+    "MATES": "972544532842,972509935121,972506555913",
+    "LOG_LEVEL": "INFO",
+    "LD_LIBRARY_PATH": "/opt/python:/opt/lib"
+  }
+}

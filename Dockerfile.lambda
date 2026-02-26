@@ -1,0 +1,64 @@
+# Stage 1: install zbar and gather all shared lib deps for Lambda
+FROM amazonlinux:2 AS zbar-builder
+RUN yum install -y amazon-linux-extras && \
+    amazon-linux-extras install -y epel && \
+    yum install -y zbar zbar-devel
+
+# Copy libzbar and all its dependencies to /out/lib (for Lambda)
+RUN mkdir -p /out/lib && \
+    cp -L /usr/lib64/libzbar.so.0* /out/lib/ && \
+    for lib in $(ldd /usr/lib64/libzbar.so.0 | grep '=>' | awk '{print $3}'); do \
+      if [ -f "$lib" ]; then cp -L "$lib" /out/lib/ 2>/dev/null || true; fi; \
+    done && \
+    cp -L /usr/lib64/libSM.so.6* /usr/lib64/libICE.so.6* /usr/lib64/libX11.so.6* \
+          /usr/lib64/libXv.so.1* /usr/lib64/libv4l2.so.0* /usr/lib64/libv4lconvert.so.0* \
+          /usr/lib64/libXext.so.6* /usr/lib64/libxcb.so.1* /usr/lib64/libXau.so.6* \
+          /usr/lib64/libjpeg.so.62* /out/lib/ 2>/dev/null || true
+
+# Stage 2: Lambda runtime
+FROM public.ecr.aws/lambda/python:3.11-x86_64
+
+# Copy zbar and all dependency libs from builder to system library path
+# Lambda runtime checks /usr/lib64 automatically, so put libraries there
+RUN mkdir -p /usr/lib64
+COPY --from=zbar-builder /out/lib/* /usr/lib64/
+COPY --from=zbar-builder /usr/include/zbar.h /usr/include/
+
+# Verify libzbar is present
+RUN ls -la /usr/lib64/libzbar* || (echo "ERROR: libzbar not found!" && exit 1)
+
+# Create symlink for libzbar if needed
+RUN cd /usr/lib64 && \
+    if [ -f libzbar.so.0 ] && [ ! -f libzbar.so ]; then \
+        ln -s libzbar.so.0 libzbar.so; \
+    fi
+
+# Also copy to task root as backup
+RUN mkdir -p ${LAMBDA_TASK_ROOT}/lib && \
+    cp /usr/lib64/libzbar* ${LAMBDA_TASK_ROOT}/lib/ 2>/dev/null || true && \
+    cp /usr/lib64/libSM.so* ${LAMBDA_TASK_ROOT}/lib/ 2>/dev/null || true && \
+    cp /usr/lib64/libICE.so* ${LAMBDA_TASK_ROOT}/lib/ 2>/dev/null || true
+
+# Set library path as backup (though /usr/lib64 should work automatically)
+ENV LD_LIBRARY_PATH=/usr/lib64:${LAMBDA_TASK_ROOT}/lib:$LD_LIBRARY_PATH
+
+# Install Python dependencies (pyzbar will find libzbar via system)
+COPY requirements-lambda.txt ${LAMBDA_TASK_ROOT}/
+RUN pip install --no-cache-dir -r ${LAMBDA_TASK_ROOT}/requirements-lambda.txt
+
+# Set working directory to Lambda task root
+WORKDIR ${LAMBDA_TASK_ROOT}
+
+# Copy application files
+COPY lambda_handler.py ${LAMBDA_TASK_ROOT}/
+COPY main.py ${LAMBDA_TASK_ROOT}/
+COPY config.py ${LAMBDA_TASK_ROOT}/
+COPY core/ ${LAMBDA_TASK_ROOT}/core/
+COPY services/ ${LAMBDA_TASK_ROOT}/services/
+COPY utils/ ${LAMBDA_TASK_ROOT}/utils/
+
+# Ensure Python can find modules in the task root
+ENV PYTHONPATH=${LAMBDA_TASK_ROOT}:${PYTHONPATH}
+
+# Lambda handler entrypoint
+CMD ["lambda_handler.handler"]
