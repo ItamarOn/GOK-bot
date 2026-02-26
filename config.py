@@ -1,7 +1,9 @@
 import os
+import redis
 from dotenv import load_dotenv
 from zoneinfo import ZoneInfo
 import logging
+from urllib.parse import urlparse
 
 env_location = 'local .env'
 if os.path.exists(".env"):
@@ -18,6 +20,44 @@ logger = logging.getLogger("gok-bot")
 tz_info = ZoneInfo("Asia/Jerusalem")
 
 logger.info(f"Loaded env vars from: {env_location}. Timezone set to {tz_info}")
+
+
+
+
+# Get Upstash Redis connection from environment variable
+UPSTASH_REDIS_URL = os.getenv('UPSTASH_REDIS_URL')
+
+if not UPSTASH_REDIS_URL:
+    raise ValueError("UPSTASH_REDIS_URL environment variable not set!")
+
+# Parse the connection string
+redis_url = urlparse(UPSTASH_REDIS_URL)
+
+# Create Redis client
+redis_client = redis.Redis(
+    host=redis_url.hostname,
+    port=redis_url.port,
+    password=redis_url.password,
+    ssl=True,  # Upstash requires SSL
+    decode_responses=True,
+    socket_connect_timeout=5,
+    socket_keepalive=True,
+    health_check_interval=30
+)
+
+# Test connection
+try:
+    redis_client.ping()
+    print("✅ Redis connected successfully!")
+except Exception as e:
+    print(f"❌ Redis connection error: {e}")
+    # Don't raise - let it fail gracefully on first request
+
+
+
+
+
+
 
 GOK_API_TOKEN = os.getenv("GOK_API_TOKEN")
 WHITE_IP = os.getenv("WHITE_IP")
