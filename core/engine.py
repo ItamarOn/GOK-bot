@@ -3,8 +3,23 @@ import html
 import time
 import random
 import requests
+
+### Following is only for WAS Lambda since pyzbar can't find libzbar in Lambda environment without it.
+import os
+_task_root = os.environ.get("LAMBDA_TASK_ROOT", "/var/task")
+_libzbar = os.path.join(_task_root, "lib", "libzbar.so.0")
+if os.path.isfile(_libzbar):
+    import ctypes.util
+    _orig_find_library = ctypes.util.find_library
+    def _find_library(name):
+        if name == "zbar":
+            return _libzbar
+        return _orig_find_library(name)
+    ctypes.util.find_library = _find_library
+### End of Lambda-specific workaround for pyzbar - for local development this will have no effect ...
+
 from PIL import Image, ImageEnhance
-from pyzbar.pyzbar import decode
+from pyzbar import pyzbar
 
 from config import (
     logger,
@@ -16,13 +31,13 @@ from utils.texts import TEXTS, GOK_STATUS, LISTED_SIGNS
 FOOD_BARCODES = {"EAN13", "EAN8"}  # UPC-A is normalized to GTIN-13 by adding a leading '0' (GS1 standard).
 
 def extract_barcode_from_image(image: Image) -> list:
-    barcodes = decode(image)
+    barcodes = pyzbar.decode(image)
     if barcodes:
         return barcodes
 
     enhancer = ImageEnhance.Contrast(image)
     contrast_image = enhancer.enhance(10)
-    return decode(contrast_image)
+    return pyzbar.decode(contrast_image)
 
 
 def check_barcode(media_url: str, text=False) -> str:
