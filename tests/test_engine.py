@@ -303,23 +303,22 @@ class TestCheckBarcodeWithLeadingZeros:
         # 2nd call (007290000000) - empty (not found)
         # 3rd call (07290000000) - found!
         mock_post.side_effect = [
-            create_post_response([]),
-            create_post_response([]),
-            create_post_response([{
+            create_post_response([{},{},{
                 'name': 'Test Product',
                 'status': 'מוצר מאושר ע"י הרב לשימוש במערכת',
                 'kashrutTypes': ['כשר חלבי'],
-                'kashrutCerts': ['GOK']
+                'kashrutCerts': ['GOK'],
+                'barcode': '07290000000',
             }])
         ]
 
         result = check_barcode('https://example.com/barcode.jpg')
 
         # Verify ask_gok was called 3 times (original + 2 retries)
-        assert mock_post.call_count == 3
+        assert mock_post.call_count == 1
 
         # Verify sleep was called 2 times (between retries)
-        assert mock_sleep.call_count == 2
+        assert mock_sleep.call_count == 0
 
         # Verify successful result
         assert 'Test Product' in result
@@ -361,8 +360,8 @@ class TestCheckBarcodeWithLeadingZeros:
 
         result = check_barcode('https://example.com/barcode.jpg')
 
-        # Should try: 000123456, 00123456, 0123456 = 3 calls
-        assert mock_post.call_count == 3
+        # Should try: 000123456, 00123456, 0123456 = in 1 calls
+        assert mock_post.call_count == 1
         assert TEXTS["errors"]["gok_not_found"] in result
         # Should list all attempted barcodes
         assert '00123456' in result
@@ -400,19 +399,20 @@ class TestCheckBarcodeWithLeadingZeros:
             return resp
 
         mock_post.side_effect = [
-            create_post_response([]),  # 00729000 - not found
-            create_post_response([{  # 0729000 - found!
+            create_post_response([{},{  # 0729000 - found!
                 'name': 'Mega Gluflex Choclate 100g',
                 'status': 'מוצר מאושר ע"י הרב לשימוש במערכת',
                 'kashrutTypes': ['חלבי'],
-                'kashrutCerts': ['OU']
+                'kashrutCerts': ['OU'],
+                'barcode': '0729000',
             }])
         ]
 
         result = check_barcode('https://example.com/barcode.jpg')
 
-        # Only 2 calls - original failed, first retry succeeded
-        assert mock_post.call_count == 2
+        # old: Only 2 calls - original failed, first retry succeeded
+        # new: 1 call
+        assert mock_post.call_count == 1
         assert 'Mega Gluflex Choclate 100g' in result
         assert 'חלבי' in result
 

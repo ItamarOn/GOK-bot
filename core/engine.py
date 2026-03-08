@@ -15,6 +15,9 @@ from utils.texts import TEXTS, GOK_STATUS, LISTED_SIGNS
 
 FOOD_BARCODES = {"EAN13", "EAN8"}  # UPC-A is normalized to GTIN-13 by adding a leading '0' (GS1 standard).
 
+STOP_STATUSES = {GOK_STATUS['not_kosher'], GOK_STATUS['unknown']}
+
+
 def extract_barcode_from_image(image: Image) -> list:
     barcodes = decode(image)
     if barcodes:
@@ -76,13 +79,20 @@ def check_barcode(media_url: str, text=False) -> str:
 
 
 def ask_gok(barcode_data: str, retry_seconds=0):
+    is_startswith_zero = barcode_data.startswith('0')
+    z_add = ''
+    queries = [{"barcode": f"{barcode_data}"}]
+
+    if barcode_data.startswith('0'):
+        num_leading_zeros = len(barcode_data) - len(barcode_data.lstrip('0'))
+        for i in range(1, num_leading_zeros + 1):
+            queries.append({"barcode": barcode_data[i:]})
+            z_add += f"{barcode_data[i:]}\n"
+        logger.debug(f"Barcode starts with '0': {queries}")
+
     url = "https://www.zekasher.com/api/v1/products"
     payload = {
-        "queries": [
-            {
-                "barcode": f"{barcode_data}",
-            }
-        ],
+        "queries": queries,
         "user-ip": WHITE_IP,
     }
 
@@ -97,44 +107,49 @@ def ask_gok(barcode_data: str, retry_seconds=0):
     try:
         response = requests.post(url, json=payload, headers=headers)
         response.raise_for_status()
-        product_info = response.json()
+        response_list = response.json()
     except Exception as e:
         if retry_seconds == 0:
             return smart_retry(barcode_data, e)
         else:
             logger.debug(f"request: {url} payload: {payload}")
             logger.exception("Cannot get basic response from GOK")
-            return TEXTS["errors"]["gok_server_error"]
+            return z_add + TEXTS["errors"]["gok_server_error"]
 
-    if not product_info:
+    if not response_list:
         logger.debug(f"{barcode_data} Doesn't exist in GOK system")
-        if barcode_data.startswith('0') and retry_seconds == 0:
-            return leading_zero_retry(barcode_data)
-        return TEXTS["errors"]["gok_not_found"]
+        return z_add + TEXTS["errors"]["gok_not_found"]
+
+    product_info = next((
+        p for p in response_list
+        if next(iter(p.get('kashrutTypes', [])), 'N/A') in STOP_STATUSES
+           or p.get('kashrutCerts')
+    ), response_list[0] if response_list else None)
 
     try:
         logger.debug(f'retry after {retry_seconds} seconds') if retry_seconds else None
-        logger.debug(f"product_info[0]:\n{product_info[0]}\n")
+        logger.debug(f"product_info:\n{product_info}\n")
 
-        product_name = html.unescape(product_info[0].get('name', '')) + '\n'
-        status = product_info[0]['status']
+        product_name = html.unescape(product_info.get('name', '')) + '\n'
+        status = product_info['status']
 
-        if status != GOK_STATUS['confirmed'] or not product_info[0].get('kashrutTypes'):
+        if is_startswith_zero:
+            z_add = TEXTS['barcode']['edited'] + product_info.get('barcode') + '\n'
+
+        if status != GOK_STATUS['confirmed'] or not product_info.get('kashrutTypes'):
             logger.debug(f"Product status: {status}")
-            if barcode_data.startswith('0') and retry_seconds == 0:
-                return leading_zero_retry(barcode_data)
-            return product_name + TEXTS["product_status"]["in_review"]
+            return z_add + product_name + TEXTS["product_status"]["in_review"]
 
-        kashrut_type = product_info[0]['kashrutTypes'][0]
+        kashrut_type = product_info['kashrutTypes'][0]
         if kashrut_type == GOK_STATUS['not_kosher']:
-            return product_name + TEXTS["product_status"]["not_kosher"]
+            return z_add + product_name + TEXTS["product_status"]["not_kosher"]
 
         if kashrut_type == GOK_STATUS['unknown']:
-            return product_name + TEXTS["product_status"]["unknown"]
+            return z_add + product_name + TEXTS["product_status"]["unknown"]
 
         logger.debug("Kosher")
-        cert = product_info[0]['kashrutCerts'][0] if product_info[0]['kashrutCerts'] else ''
-        return product_name + TEXTS["product_status"]["kosher_template"].format(
+        cert = product_info['kashrutCerts'][0] if product_info['kashrutCerts'] else ''
+        return z_add + product_name + TEXTS["product_status"]["kosher_template"].format(
             kashrut_type=kashrut_type,
             cert=cert,
         )
@@ -153,23 +168,3 @@ def smart_retry(barcode_data, e):
     return ask_gok(barcode_data, retry_seconds=sleep_time)
 
 
-def leading_zero_retry(barcode_data: str) -> str:
-    """
-    Retry GOK query by removing leading zeros (up to 3)
-    GTIN-13 format include EAN-13 and UPC-A. by add leading '0' to UPC-A.
-    to align with GOK system we must remove this leading '0' for EAN-13.
-    """
-    results = {}
-    for i in range(1, 3):
-        if len(barcode_data) < i or barcode_data[i-1] != '0':
-            break
-        modified_barcode = barcode_data[i:]
-        logger.debug(f"try barcode without {i} leading zeros: {modified_barcode}")
-        time.sleep(6)
-        result = ask_gok(modified_barcode, 1)
-        if any(sign in result for sign in LISTED_SIGNS):
-            return TEXTS['barcode']['edited'] + modified_barcode + '\n' + result
-        results[modified_barcode] = result
-    logger.info(f'No results after leading zero retries: {results}')
-    printed_results = "\n".join(results.keys())
-    return f'{printed_results}\n' + TEXTS["errors"]["gok_not_found"]
