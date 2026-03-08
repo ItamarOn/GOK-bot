@@ -3,6 +3,7 @@
 debug/
 *.pyc
 .env
+.env*
 ADMIN.md
 __pycache__/
 .idea/
