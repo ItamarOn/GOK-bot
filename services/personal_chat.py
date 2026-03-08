@@ -1,0 +1,79 @@
+from config import logger
+from core.engine import check_barcode
+from core.message import green_send_message
+from services.reports import report_new_user_startup, report_bug_request, report_quoted_response
+from utils.texts import HELP_KEYWORDS, TEXTS, THANKS_KEYWORDS
+from utils.redis_manager import db
+
+async def personal_chat_handler(whatsapp_request: dict):
+    sender_data = whatsapp_request["senderData"]
+    sender = sender_data["sender"]
+    msg_data = whatsapp_request["messageData"]
+    msg_type = msg_data["typeMessage"]
+    msg_id = whatsapp_request["idMessage"]
+
+    # ignore reactions
+    if msg_type == 'reactionMessage':
+        return {"status": "reaction_ignored"}
+
+    # ignore duplicates
+    if await db.is_duplicate('msg-p', msg_id, ttl_seconds=86400):
+        logger.info(f"Duplicate message ignored: {msg_id} from {sender}")
+        return {"status": "duplicate_ignored"}
+
+    sender_digits = "".join(c for c in sender if c.isdigit())
+    number_of_requests = await db.increment_counter(sender_digits)
+    if number_of_requests == 1:
+        text = await report_new_user_startup(whatsapp_request)
+        await green_send_message(sender, TEXTS["welcome"] + TEXTS["bug"]["bug_report"])
+        # ignore duplicate, ignore green api signs (sometimes '{{SWE001}}' is first message)
+        if text in HELP_KEYWORDS or '{' in text:
+            return {"status": "new_user_thanks_sent"}
+
+    # pic
+    if msg_type == "imageMessage":
+        image_url = msg_data["fileMessageData"]["downloadUrl"]
+
+        # analyze image
+        result = check_barcode(image_url)
+        await green_send_message(sender, result)  #, reply_to=msg_id)
+        return {"status": "image_processed"}
+
+    # quoted message
+    if msg_type == "quotedMessage":
+        quoted = msg_data.get('quotedMessage', {}).get('textMessage', '')
+        if any(term in quoted for term in TEXTS["group"].values()):
+            logger.info(f"User {sender} replied to group message")
+            await report_quoted_response(whatsapp_request)
+            return {"status": "quoted message reported"}
+
+    # text
+    if msg_type == "textMessage":
+        text = msg_data["textMessageData"]["textMessage"].lower().strip()
+        if text.startswith(TEXTS["bug"]['prefix']):
+            await report_bug_request(whatsapp_request)
+            await green_send_message(sender, TEXTS["bug"]["acknowledgement"])
+            return {"status": "bug_reported"}
+        if text in HELP_KEYWORDS:
+            logger.info(f"Help message requested from {sender}")
+            await green_send_message(sender, TEXTS["welcome"])
+            return {"status": "help_sent"}
+
+        digits = "".join(c for c in text if c.isdigit())
+        if digits:
+            result = check_barcode(digits, text=True)
+            await green_send_message(sender, result, reply_to=msg_id)
+        elif any(keyword in text for keyword in THANKS_KEYWORDS):
+            await green_send_message(sender, TEXTS["thanks"], reply_to=msg_id)
+        else:
+            await green_send_message(sender, TEXTS["errors"]["invalid_message"], reply_to=msg_id)
+
+        return {"status": "text_processed"}
+
+    # all the rest
+    await green_send_message(
+        sender,
+        TEXTS["errors"]["unsupported_type"],
+        reply_to=msg_id
+    )
+    return {"status": "unsupported"}

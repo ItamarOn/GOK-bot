@@ -1,0 +1,11 @@
+# .gitignore
+.venv/
+debug/
+*.pyc
+.env
+.env*
+ADMIN.md
+__pycache__/
+.idea/
+.github/
+env-vars.json
