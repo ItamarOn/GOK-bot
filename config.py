@@ -1,9 +1,8 @@
 import os
-import redis
+import sys
 from dotenv import load_dotenv
 from zoneinfo import ZoneInfo
 import logging
-from urllib.parse import urlparse
 
 env_location = 'local .env'
 if os.path.exists(".env"):
@@ -11,52 +10,32 @@ if os.path.exists(".env"):
 else:
     env_location = 'server environment variables'
 
+log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+
+# 3. Use force=True to override AWS Lambda's default configuration
 logging.basicConfig(
-    level=os.getenv("LOG_LEVEL"),  # or INFO
+    level=log_level,
     format="%(asctime)s [%(levelname)s]: %(message)s",
+    stream=sys.stdout,
+    force=True  # <--- THIS IS THE KEY FOR LAMBDA
 )
 
 logger = logging.getLogger("gok-bot")
+
+# Optional: Ensure the child logger level is also explicitly set
+logger.setLevel(log_level)
+
+
 tz_info = ZoneInfo("Asia/Jerusalem")
 
-logger.info(f"Loaded env vars from: {env_location}. Timezone set to {tz_info}")
-
-
-
+logger.info(f"Loaded env vars from: {env_location}. Timezone set to {tz_info}. log: {log_level}")
 
 # Get Upstash Redis connection from environment variable
-UPSTASH_REDIS_URL = os.getenv('UPSTASH_REDIS_URL')
+UPSTASH_REDIS_REST_URL = os.getenv('UPSTASH_REDIS_REST_URL')
+UPSTASH_REDIS_REST_TOKEN = os.getenv('UPSTASH_REDIS_REST_TOKEN')
 
-if not UPSTASH_REDIS_URL:
-    raise ValueError("UPSTASH_REDIS_URL environment variable not set!")
-
-# Parse the connection string
-redis_url = urlparse(UPSTASH_REDIS_URL)
-
-# Create Redis client
-redis_client = redis.Redis(
-    host=redis_url.hostname,
-    port=redis_url.port,
-    password=redis_url.password,
-    ssl=True,  # Upstash requires SSL
-    decode_responses=True,
-    socket_connect_timeout=5,
-    socket_keepalive=True,
-    health_check_interval=30
-)
-
-# Test connection
-try:
-    redis_client.ping()
-    print("✅ Redis connected successfully!")
-except Exception as e:
-    print(f"❌ Redis connection error: {e}")
-    # Don't raise - let it fail gracefully on first request
-
-
-
-
-
+if not UPSTASH_REDIS_REST_TOKEN:
+    raise ValueError("UPSTASH_REDIS_REST_TOKEN environment variable not set! AWS Lambda requires this for Redis connection.")
 
 
 GOK_API_TOKEN = os.getenv("GOK_API_TOKEN")

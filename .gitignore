@@ -7,3 +7,4 @@ ADMIN.md
 __pycache__/
 .idea/
 .github/
+env-vars.json

@@ -1,32 +1,31 @@
 from typing import Tuple, Optional
 
 from datetime import datetime, timedelta
-import redis.asyncio as redis
-from config import logger, REDIS_URL
+from upstash_redis.asyncio import Redis
+from config import logger, UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN
 
 
 class RedisManager:
     def __init__(self):
-        self.redis_url = REDIS_URL
+        self.url = UPSTASH_REDIS_REST_URL
+        self.token = UPSTASH_REDIS_REST_TOKEN
         self.client = None
 
     async def connect(self):
-        """Establish connection to Redis once (called on startup)"""
+        """Initialize the Upstash REST client"""
         try:
             if not self.client:
-                self.client = await redis.from_url(
-                    self.redis_url,
-                    encoding="utf-8",
-                    decode_responses=True
-                )
-            logger.info("Redis connected successfully")
+                self.client = Redis(url=self.url, token=self.token)
+
+            # Simple ping to verify
+            await self.client.ping()
+            logger.info("Redis (HTTP) connected successfully")
         except Exception as e:
-            logger.error(f"Failed to connect to Redis: {self.redis_url}")
+            logger.error(f"Redis Connection Failed: {e}")
             raise
 
     async def _ensure_connection(self):
         if not self.client:
-            logger.debug("restarting Redis connection")
             await self.connect()
 
     async def is_duplicate(self, topic, identifier: str, ttl_seconds: int = 86400) -> bool:
@@ -96,19 +95,23 @@ class RedisManager:
         start_of_week = today - timedelta(days=days_since_sunday)
         return start_of_week.strftime("%d/%m")
 
-    async def track_received_message(self, is_group: bool, is_admin: bool = False, failed_received: bool = False) -> None:
+    async def track_received_message(self, is_group: bool, is_admin: bool = False,
+                                     failed_received: bool = False) -> None:
         """Track incoming message statistics (async)"""
         try:
+            await self._ensure_connection()
             week_key = self._get_current_week_key()
             message_type = "group" if is_group else "private"
             message_type += ":admin" if is_admin else ""
             status = "failed_received" if failed_received else "received"
             redis_key = f"stats:{week_key}:{status}:{message_type}"
 
-            async with self.client.pipeline(transaction=True) as pipe:
-                pipe.incr(redis_key)
-                pipe.expire(redis_key, 1209600, nx=True) # nx to set ttl only on the first increment. 14 days = 1209600
-                await pipe.execute()
+            # Use .pipeline() (or .multi() for an atomic transaction in Upstash)
+            pipe = self.client.pipeline()
+            pipe.incr(redis_key)
+            # NX = Set expiry only when the key has no expiry (i.e., the first message)
+            pipe.expire(redis_key, 1209600, nx=True)
+            await pipe.exec()
 
         except Exception as e:
             logger.info(f"Failed to track received message: {e}")
@@ -116,18 +119,19 @@ class RedisManager:
     async def track_sent_message(self, is_group: bool) -> None:
         """Track outgoing message statistics (async)"""
         try:
+            await self._ensure_connection()
             week_key = self._get_current_week_key()
             message_type = "group" if is_group else "private"
             redis_key = f"stats:{week_key}:sent:{message_type}"
 
-            async with self.client.pipeline(transaction=True) as pipe:
-                pipe.incr(redis_key)
-                pipe.expire(redis_key, 1209600, nx=True) # nx to set ttl only on the first increment. 14 days = 1209600
-                await pipe.execute()
+            pipe = self.client.pipeline()
+            pipe.incr(redis_key)
+            # NX = Set expiry only when the key has no expiry
+            pipe.expire(redis_key, 1209600, nx=True)
+            await pipe.exec()
 
         except Exception as e:
             logger.info(f"Failed to track sent message: {e}")
-
     async def get_weekly_stats(self, week_offset: int = 0) -> dict:
          """ Get statistics for a specific week (Sunday to Saturday) """
          try:

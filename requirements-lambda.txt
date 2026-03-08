@@ -8,3 +8,4 @@ pyzbar==0.1.9
 python-dotenv==1.2.1
 python-multipart==0.0.20
 pydantic==2.12.3
+upstash-redis==1.6.0
