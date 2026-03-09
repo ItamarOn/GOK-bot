@@ -14,7 +14,10 @@ async def personal_chat_handler(whatsapp_request: dict):
 
     # ignore reactions
     if msg_type == 'reactionMessage':
-        return {"status": "reaction_ignored"}
+        sign = msg_data.get("extendedTextMessageData", {}). get("text", "")
+        await green_send_message(sender, TEXTS["reaction"].format(sign=sign) + TEXTS["thanks"])
+
+        return {"status": "reaction_msg_sent"}
 
     # ignore duplicates
     if await db.is_duplicate('msg-p', msg_id, ttl_seconds=86400):
