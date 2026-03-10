@@ -12,15 +12,15 @@ async def update_admin_startup():
         logger.info('Green API is available - sending startup message to admin.')
     else:
         logger.error('Green API is not available')
-    time_now = datetime.now(tz_info).strftime("%H:%M %d/%m")
-    try:
-        await green_send_message(
-            ADMIN_CHAT_ID,
-            f"🟢Active {ENVIRONMENT} {GIT_SHA[:7]} {SERVER_PROVIDER} ({time_now})"
-        )
-    except:
-        logger.exception("Failed to send startup message to admin.")
-
+    if ENVIRONMENT == "DEV":
+        time_now = datetime.now(tz_info).strftime("%H:%M %d/%m")
+        try:
+            await green_send_message(
+                ADMIN_CHAT_ID,
+                f"🟢Active {ENVIRONMENT} {GIT_SHA[:7]} {SERVER_PROVIDER} ({time_now})"
+            )
+        except:
+            logger.exception("Failed to send startup message to admin.")
 
 async def update_admin_shutdown(db):
     try:

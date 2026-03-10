@@ -9,6 +9,7 @@ from services.reports import report_version_update, update_weekly_status
 from services.group import group_handler
 from services.personal_chat import personal_chat_handler
 from utils.redis_manager import db
+from utils.thin_log import thin_log
 
 api_key_header = APIKeyHeader(name="X-Admin-Token")
 
@@ -25,11 +26,13 @@ async def verify_admin(api_key: str = Depends(api_key_header)):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup/shutdown lifecycle: connect Redis and run admin/report updates."""
+    logger.info("🟢🟢🟢 Active")
     await db.connect()
     await update_admin_startup()
     await report_version_update(db)
     yield
     if db.client:
+        logger.info("🔴🔴🔴 Inactive")
         await update_admin_shutdown(db)
         await db.client.close()
         logger.info("Redis connection closed")
@@ -104,7 +107,7 @@ async def get_stats(offset: int = 0, send_whatsapp: bool = False, admin: str = D
 @app.post("/webhook-green", tags=["whatsapp"])
 async def green_webhook(request: Request, background_tasks: BackgroundTasks):
     whatsapp_request = await request.json()
-    logger.info(f"Request: {whatsapp_request}")
+    thin_log(whatsapp_request)
 
     type_wh = whatsapp_request.get("typeWebhook")
     sender = whatsapp_request.get("senderData", {})
