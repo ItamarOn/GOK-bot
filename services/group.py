@@ -50,7 +50,7 @@ async def group_handler(whatsapp_request: dict):
             logger.info(f"Duplicate barcode {detected_barcode} from {actual_sender} in {group_name}")
             return {"status": "group_duplicate_barcode_ignored"}
 
-        if TEXTS["errors"]["gok_not_found"] in result:
+        if TEXTS["errors"]["gok_not_found"] in result or TEXTS["product_status"]["in_review"] in result:
             logger.info(f"Group image barcode not found in GOK: {msg_id} from {actual_sender} in {group_name}")
             barcode_or_barcodes_list = "".join(c for c in result if c.isdigit() or c == '\n')
             unlisted_msg = barcode_or_barcodes_list + TEXTS['group']['unlisted']
