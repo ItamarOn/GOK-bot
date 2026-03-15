@@ -50,12 +50,27 @@ async def group_handler(whatsapp_request: dict):
             logger.info(f"Duplicate barcode {detected_barcode} from {actual_sender} in {group_name}")
             return {"status": "group_duplicate_barcode_ignored"}
 
-        if TEXTS["errors"]["gok_not_found"] in result or TEXTS["product_status"]["in_review"] in result:
+        if TEXTS["errors"]["gok_not_found"] in result:
             logger.info(f"Group image barcode not found in GOK: {msg_id} from {actual_sender} in {group_name}")
             barcode_or_barcodes_list = "".join(c for c in result if c.isdigit() or c == '\n')
             unlisted_msg = barcode_or_barcodes_list + TEXTS['group']['unlisted']
             await green_send_message(sender_data["chatId"], unlisted_msg, reply_to=msg_id)
             return {"status": "group_unlisted"}
+
+        if TEXTS["product_status"]["in_review"] in result:
+            logger.info(f"Group image barcode found in GOK with unproved status: "
+                        f"{msg_id} from {actual_sender} in {group_name}")
+            clean_result = result.replace(
+                TEXTS["product_status"]["in_review"], "").replace(
+                TEXTS['barcode']["prefix"], "").replace(
+                TEXTS["barcode"]["edited"], "").strip()
+            lines = clean_result.splitlines()
+            if len(lines) >= 2 and lines[0] == lines[1]:
+                lines.pop(0)
+            clean_result = "\n".join(lines)
+            unlisted_msg = clean_result + '\n' + TEXTS['group']['unlisted']
+            await green_send_message(sender_data["chatId"], unlisted_msg, reply_to=msg_id)
+            return {"status": "group_in_db_unlisted"}
 
         if any(sign in result for sign in LISTED_SIGNS):
             logger.info(f"Group image with status: {msg_id} from {actual_sender} in {group_name}")
