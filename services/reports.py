@@ -1,15 +1,11 @@
-from datetime import datetime
-
 from config import REPORTS_CHAT_ID, tz_info, RENDER_GIT_COMMIT, SERVER_PROVIDER, APP_GIT_SHA
 from core.message import green_send_message
-from utils.phone_country_name import process_phone_number
-
+from datetime import datetime
 
 async def report_new_user_startup(whatsapp_request):
     time_now = datetime.now(tz_info).strftime("%H:%M %d/%m")
     s = whatsapp_request['senderData']
     m = whatsapp_request['messageData']
-    number_and_country = process_phone_number(s['sender'].split('@')[0])
     text = (m.get('textMessageData', {}).get('textMessage', '') or
             m.get('fileMessageData', {}).get('mimeType', '') or
             m.get('extendedTextMessageData', {}).get('text', '') or
@@ -18,7 +14,7 @@ async def report_new_user_startup(whatsapp_request):
         REPORTS_CHAT_ID,
         f"🆕({time_now}) new chat started.\n"
         f"User whatsapp's name: '{s['senderName']}'\n"
-        f"Number: {number_and_country}\n"
+        f"Number: {s['sender'].split('@')[0]}\n"
         f"Message: `{text}`"
     )
     return text
