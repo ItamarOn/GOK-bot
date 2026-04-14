@@ -26,10 +26,10 @@ async def group_handler(whatsapp_request: dict):
         return {"status": "duplicate_ignored"}
 
     # if is_night_hours(timestamp):
-    if is_night_hours(timestamp) and actual_sender != ADMIN_CHAT_ID:
+    if (night_str := is_night_hours(timestamp)) and actual_sender != ADMIN_CHAT_ID:
         logger.info(f'Now is night hours. Got: {group_name}:{actual_sender}')
         if not await db.is_duplicate('night', f'{chat_id}', ttl_seconds=3600):
-            return await night_response(sender_data, msg_id, actual_sender, group_name)
+            return await night_response(sender_data, msg_id, actual_sender, group_name, night_str)
         logger.info(f"Night hours - duplicate message ignored: {actual_sender} in {group_name} / {chat_id}")
         return {"status": "group_outside_hours_many_messages"}
 
@@ -80,7 +80,8 @@ async def group_handler(whatsapp_request: dict):
     return {"status": "group_ignored"}
 
 
-async def night_response(sender_data, msg_id, actual_sender, group_name):
+async def night_response(sender_data, msg_id, actual_sender, group_name, night_str):
     logger.info(f"Outside working hours - ignoring group message {msg_id} from {actual_sender} in {group_name}")
-    await green_send_message(sender_data["chatId"], TEXTS["errors"]["out_of_working_hours"], reply_to=msg_id)
+    text = TEXTS["errors"]["out_of_working_hours"].format(rounded=night_str)
+    await green_send_message(sender_data["chatId"], text, reply_to=msg_id)
     return {"status": "group_outside_hours"}

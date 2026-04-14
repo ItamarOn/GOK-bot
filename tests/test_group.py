@@ -4,6 +4,8 @@ import pytest
 import fakeredis
 from unittest.mock import patch
 
+from taskflow.examples.graph_flow import expected
+
 from services.group import group_handler
 from utils.texts import TEXTS
 from utils.redis_manager import RedisManager
@@ -21,7 +23,7 @@ def mock_redis_manager():
 
 # duplicate call at nighttime
 @patch('services.group.is_too_old', return_value=False)
-@patch('services.group.is_night_hours', return_value=True)
+@patch('services.group.is_night_hours', return_value=TEXTS["left_time"]["hour_only"])
 @patch('services.group.green_send_message')
 @pytest.mark.asyncio
 async def test_group_handler_night_duplicate(
@@ -61,7 +63,7 @@ async def test_group_handler_night_duplicate(
 # image with no barcode
 @patch('services.group.check_barcode', return_value=TEXTS["errors"]["barcode_not_found"])
 @patch('services.group.green_send_message')
-@patch('services.group.is_night_hours', return_value=False)
+@patch('services.group.is_night_hours', return_value="")
 @patch('services.group.is_too_old', return_value=False)
 @pytest.mark.asyncio
 async def test_group_handler_no_barcode(
@@ -79,7 +81,7 @@ async def test_group_handler_no_barcode(
 @patch('services.group.check_barcode',
        return_value='{0}, {1}'.format('123456789\n ברקוד', TEXTS["errors"]["gok_not_found"]))
 @patch('services.group.green_send_message')
-@patch('services.group.is_night_hours', return_value=False)
+@patch('services.group.is_night_hours', return_value="")
 @patch('services.group.is_too_old', return_value=False)
 @pytest.mark.asyncio
 async def test_group_handler_barcode_not_found(
@@ -113,7 +115,7 @@ async def test_group_handler_barcode_not_found(
 ])
 @patch('services.group.check_barcode')
 @patch('services.group.green_send_message')
-@patch('services.group.is_night_hours', return_value=False)
+@patch('services.group.is_night_hours', return_value="")
 @patch('services.group.is_too_old', return_value=False)
 @pytest.mark.asyncio
 async def test_group_handler_kosher_barcode(
@@ -131,3 +133,22 @@ async def test_group_handler_kosher_barcode(
     assert result['status'] == 'group_listed'
     result2 = await group_handler(group_pic_example2)
     assert result2['status'] == 'group_duplicate_barcode_ignored'
+
+
+@patch('services.group.is_too_old', return_value=False)
+@patch('services.group.green_send_message')
+@pytest.mark.asyncio
+async def test_night_msg(
+        mock_green_send_message,
+        #mock_is_night_hours,
+        mock_is_too_old,
+        mock_redis_manager
+):
+    whatsapp_request = group_pic_example.copy()
+    # Jan 1, 2040, 01:00:00 in Asia/Jerusalem (which is Dec 31, 2039, 23:00:00 GMT)
+    whatsapp_request['timestamp'] = 2208985200
+    expected = 'כעת לילה בישראל 🤫😴✨\nהקבוצה פעילה בין 7:00 ל22:00,\nנשוב לפעילות בעוד כ6 שעות.'
+    result = await group_handler(whatsapp_request)
+    assert mock_green_send_message.call_args[0][1] == expected
+    assert result['status'] == 'group_outside_hours'
+
