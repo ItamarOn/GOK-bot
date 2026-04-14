@@ -43,7 +43,8 @@ TEXTS = {
         "hours_only": "{hours} שעות",
         "hour_only": "שעה",
         "next_hour": "{next_hours} שעות",
-        "hours_and_half": "{hours} שעות וחצי"
+        "hours_and_half": "{hours} שעות וחצי",
+        "shabbat": "זמן מה, לאחר צאת השבת בישראל",
     },
     "product_status": {
         "in_review": "לא קיים מידע במערכת GOK🤷",

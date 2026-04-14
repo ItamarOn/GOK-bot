@@ -140,7 +140,6 @@ async def test_group_handler_kosher_barcode(
 @pytest.mark.asyncio
 async def test_night_msg(
         mock_green_send_message,
-        #mock_is_night_hours,
         mock_is_too_old,
         mock_redis_manager
 ):
@@ -152,3 +151,19 @@ async def test_night_msg(
     assert mock_green_send_message.call_args[0][1] == expected
     assert result['status'] == 'group_outside_hours'
 
+
+@patch('services.group.is_too_old', return_value=False)
+@patch('services.group.green_send_message')
+@pytest.mark.asyncio
+async def test_night_msg_shabbat(
+        mock_green_send_message,
+        mock_is_too_old,
+        mock_redis_manager
+):
+    whatsapp_request = group_pic_example.copy()
+    # Friday, April 17, 2026, at 23:00
+    whatsapp_request['timestamp'] = 1776456000
+    expected = 'כעת לילה בישראל 🤫😴✨\nהקבוצה פעילה בין 7:00 ל22:00,\nנשוב לפעילות בעוד כזמן מה, לאחר צאת השבת בישראל.'
+    result = await group_handler(whatsapp_request)
+    assert mock_green_send_message.call_args[0][1] == expected
+    assert result['status'] == 'group_outside_hours'

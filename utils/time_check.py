@@ -22,13 +22,16 @@ def is_night_hours(timestamp: int) -> str:
         morning_dt = dt.replace(
             hour=start_hour, minute=0, second=0, microsecond=0
         )
+    lt = TEXTS["left_time"]
+
+    if morning_dt.weekday() == 5:  # Saturday
+        return lt["shabbat"]
 
     # Calculate the difference
     diff = morning_dt - dt
     hours, remainder = divmod(diff.seconds, 3600)
     minutes, _ = divmod(remainder, 60)
 
-    lt = TEXTS["left_time"]
     if hours < 1:
         if minutes < 10:
             night_left_str = lt["moments"]
