@@ -26,6 +26,6 @@ def thin_log(whatsapp_request):
 
     full_log = f"Request: {log_view}"
     if sender_name and download_url:
-        full_log += f"\nSender: {sender_name}\nURL: {download_url}"
+        full_log += f"\n🔽 {download_url} ▶️ {sender_name}"
 
     logger.info(full_log)
