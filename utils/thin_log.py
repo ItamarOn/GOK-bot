@@ -22,10 +22,12 @@ def thin_log(whatsapp_request):
     _redact_sensitive_data(log_view)
 
     sender_name = whatsapp_request.get('senderData', {}).get('senderName')
+    chat_name = whatsapp_request.get('senderData', {}).get('chatName')
     download_url = whatsapp_request.get('messageData', {}).get('fileMessageData', {}).get('downloadUrl')
 
     full_log = f"Request: {log_view}"
     if sender_name and download_url:
-        full_log += f"\n🔽 {download_url} ▶️ {sender_name}"
+        group = "💬" if chat_name == sender_name else "👥"
+        full_log += f"\n🔽 {download_url} {group}️ {sender_name}"
 
     logger.info(full_log)
