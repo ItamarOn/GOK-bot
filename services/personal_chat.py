@@ -51,8 +51,14 @@ async def personal_chat_handler(whatsapp_request: dict):
             return {"status": "quoted message reported"}
 
     # text
+    raw_text = ''
     if msg_type == "textMessage":
-        text = msg_data["textMessageData"]["textMessage"].lower().strip()
+        raw_text = msg_data.get("textMessageData", {}).get("textMessage")
+    elif msg_type == "extendedTextMessage":
+        raw_text = msg_data.get("extendedTextMessageData", {}).get("text")
+
+    if raw_text:
+        text = raw_text.lower().strip()
         if text.startswith(TEXTS["bug"]['prefix']):
             await report_bug_request(whatsapp_request)
             await green_send_message(sender, TEXTS["bug"]["acknowledgement"])
